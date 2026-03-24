@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35825.156
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastructure", "{722D0165-24FD-409F-B361-82E2100354E1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{0C801875-17E8-4372-AFA1-70CF0323B50A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FurnitureShop.Application", "Core\FurnitureShop.Application\FurnitureShop.Application.csproj", "{A970E192-9873-4708-8274-3ACEAE83CEAE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FurnitureShop.Domain", "Core\FurnitureShop.Domain\FurnitureShop.Domain.csproj", "{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FurnitureShop.Infrastructure", "Infrastructure\FurnitureShop.Infrastructure\FurnitureShop.Infrastructure.csproj", "{6273D5CC-71F3-458F-A499-A1D4FF4614FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FurnitureShop.Persistence", "Infrastructure\FurnitureShop.Persistence\FurnitureShop.Persistence.csproj", "{9AB1972B-7B91-4C31-8BA2-CAB59356B643}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FurnitureShop.API", "Presentation\FurnitureShop.API\FurnitureShop.API.csproj", "{022B985A-902F-435D-BA1F-6031504959D4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A970E192-9873-4708-8274-3ACEAE83CEAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A970E192-9873-4708-8274-3ACEAE83CEAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A970E192-9873-4708-8274-3ACEAE83CEAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A970E192-9873-4708-8274-3ACEAE83CEAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6273D5CC-71F3-458F-A499-A1D4FF4614FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6273D5CC-71F3-458F-A499-A1D4FF4614FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6273D5CC-71F3-458F-A499-A1D4FF4614FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6273D5CC-71F3-458F-A499-A1D4FF4614FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AB1972B-7B91-4C31-8BA2-CAB59356B643}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AB1972B-7B91-4C31-8BA2-CAB59356B643}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AB1972B-7B91-4C31-8BA2-CAB59356B643}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AB1972B-7B91-4C31-8BA2-CAB59356B643}.Release|Any CPU.Build.0 = Release|Any CPU
+		{022B985A-902F-435D-BA1F-6031504959D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{022B985A-902F-435D-BA1F-6031504959D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{022B985A-902F-435D-BA1F-6031504959D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{022B985A-902F-435D-BA1F-6031504959D4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A970E192-9873-4708-8274-3ACEAE83CEAE} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{72F85E01-EAB6-48C7-863D-80CC5BF3FAEC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{6273D5CC-71F3-458F-A499-A1D4FF4614FC} = {722D0165-24FD-409F-B361-82E2100354E1}
+		{9AB1972B-7B91-4C31-8BA2-CAB59356B643} = {722D0165-24FD-409F-B361-82E2100354E1}
+		{022B985A-902F-435D-BA1F-6031504959D4} = {0C801875-17E8-4372-AFA1-70CF0323B50A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {57598A4F-87CE-4D88-8D38-86A4FB19B552}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,104 @@
+using AutoMapper;
+using FurnitureShop.Application.Dtos.Wishlist;
+using FurnitureShop.Application.Exceptions;
+using FurnitureShop.Application.Repsitories.ReadRepositories;
+using FurnitureShop.Application.Repsitories.WriteRepositories;
+using FurnitureShop.Application.Services.Abstracts;
+using FurnitureShop.Application.Validation;
+using FurnitureShop.Domain.Entities.Concretes;
+
+namespace FurnitureShop.Persistence.Services.Concretes;
+
+public class WishlistService : IWishlistService
+{
+    private readonly IWishlistReadRepository _readRepo;
+    private readonly IWishlistWriteRepository _writeRepo;
+    private readonly ILanguageService _langService;
+    private readonly IMapper _mapper;
+
+    private string lang => _langService.GetCurrentLanguage();
+
+
+    public WishlistService(
+        IWishlistReadRepository readRepo,
+        IWishlistWriteRepository writeRepo,
+        ILanguageService langService,
+        IMapper mapper)
+    {
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
+        _langService = langService;
+        _mapper = mapper;
+    }
+
+    public async Task<WishlistDto> GetAsync(string userId)
+    {
+        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        if (wishlist is null)
+            return new WishlistDto();
+        return _mapper.Map<WishlistDto>(wishlist);
+    }
+
+    public async Task AddItemAsync(string userId, int? productId, int? collectionId)
+    {
+
+        if (productId is null && collectionId is null)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>>
+                {
+                    { "item", new List<string> { ValidationMessages.Get(lang, "ProductOrCollectionRequired") } }
+                });
+
+        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+
+        if (wishlist is null)
+        {
+            wishlist = new Wishlist { UserId = userId };
+            await _writeRepo.AddAsync(wishlist);
+            await _writeRepo.SaveChangesAsync();
+        }
+
+        // artıq varsa əlavə etmə
+        var alreadyExists = wishlist.Items.Any(x =>
+            x.ProductId == productId &&
+            x.CollectionId == collectionId);
+
+        if (alreadyExists) return;
+
+        wishlist.Items.Add(new WishlistItem
+        {
+            WishlistId = wishlist.Id,
+            ProductId = productId,
+            CollectionId = collectionId
+        });
+
+        _writeRepo.Update(wishlist);
+        await _writeRepo.SaveChangesAsync();
+    }
+
+    public async Task RemoveItemAsync(string userId, int wishlistItemId)
+    {
+
+        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        if (wishlist is null)
+            throw new NotFoundException(ValidationMessages.Get(lang, "WishlistNotFound"));
+
+        var item = wishlist.Items.FirstOrDefault(x => x.Id == wishlistItemId);
+        if (item is null)
+            throw new NotFoundException(ValidationMessages.Get(lang, "WishlistItemNotFound"));
+
+        wishlist.Items.Remove(item);
+        _writeRepo.Update(wishlist);
+        await _writeRepo.SaveChangesAsync();
+    }
+
+    public async Task<bool> IsInWishlistAsync(string userId, int? productId, int? collectionId)
+    {
+        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        if (wishlist is null) return false;
+
+        return wishlist.Items.Any(x =>
+            x.ProductId == productId &&
+            x.CollectionId == collectionId);
+    }
+}
