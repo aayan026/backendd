@@ -27,13 +27,9 @@ public class ProductController : BaseApiController
     public async Task<IActionResult> GetFeatured()
         => OkResponse(await _service.GetFeaturedAsync());
 
-    [HttpGet("by-category/{categoryId}")]
-    public async Task<IActionResult> GetByCategory(int categoryId, [FromQuery] PaginationParams pagination)
-    {
-        var result = await _service.GetPagedAsync(categoryId, pagination);
-        return Ok(ApiResponse<List<ProductDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
-    }
-
+    /// <summary>
+    /// FurnitureCategory-yə görə məhsullar (paginasiya ilə)
+    /// </summary>
     [HttpGet("by-furniture-category/{categoryId}")]
     public async Task<IActionResult> GetByFurnitureCategory(int categoryId, [FromQuery] PaginationParams pagination)
     {

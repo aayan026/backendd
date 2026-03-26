@@ -1,5 +1,5 @@
+using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Services.Abstracts;
-using FurnitureShop.Domain.Entities.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,50 +9,51 @@ namespace FurnitureShop.API.Controllers;
 [Authorize(Roles = "Admin")]
 public class AdminController : BaseApiController
 {
-    private readonly IOrderService _orderService;
-    private readonly IProductService _productService;
+    private readonly IAdminService _adminService;
 
-    public AdminController(IOrderService orderService, IProductService productService)
+    public AdminController(IAdminService adminService)
     {
-        _orderService = orderService;
-        _productService = productService;
+        _adminService = adminService;
     }
 
+    /// <summary>
+    /// Dashboard — order statistikaları + revenue + user sayı
+    /// </summary>
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard()
+        => OkResponse(await _adminService.GetDashboardAsync());
+
+    // ── User Management ────────────────────────────────────────────────────
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers([FromQuery] PaginationParams pagination)
     {
-        var allOrders = await _orderService.GetAllAsync(new Application.Common.Responses.PaginationParams
-        {
-            Page = 1,
-            PageSize = 1
-        });
+        var result = await _adminService.GetUsersAsync(pagination);
+        return Ok(Application.Common.Responses.ApiResponse<object>.Ok(result.Items, result.Pagination, Msg("Success")));
+    }
 
-        var pendingOrders = await _orderService.GetByStatusAsync(
-            OrderStatus.Pending,
-            new Application.Common.Responses.PaginationParams { Page = 1, PageSize = 1 });
+    [HttpGet("users/{userId}")]
+    public async Task<IActionResult> GetUser(string userId)
+        => OkResponse(await _adminService.GetUserByIdAsync(userId));
 
-        var confirmedOrders = await _orderService.GetByStatusAsync(
-            OrderStatus.Confirmed,
-            new Application.Common.Responses.PaginationParams { Page = 1, PageSize = 1 });
+    [HttpPatch("users/{userId}/ban")]
+    public async Task<IActionResult> BanUser(string userId)
+    {
+        await _adminService.BanUserAsync(userId);
+        return UpdatedResponse();
+    }
 
-        var deliveredOrders = await _orderService.GetByStatusAsync(
-            OrderStatus.Delivered,
-            new Application.Common.Responses.PaginationParams { Page = 1, PageSize = 1 });
+    [HttpPatch("users/{userId}/unban")]
+    public async Task<IActionResult> UnbanUser(string userId)
+    {
+        await _adminService.UnbanUserAsync(userId);
+        return UpdatedResponse();
+    }
 
-        var cancelledOrders = await _orderService.GetByStatusAsync(
-            OrderStatus.Cancelled,
-            new Application.Common.Responses.PaginationParams { Page = 1, PageSize = 1 });
-
-        return OkResponse(new
-        {
-            orders = new
-            {
-                total      = allOrders.Pagination.TotalCount,
-                pending    = pendingOrders.Pagination.TotalCount,
-                confirmed  = confirmedOrders.Pagination.TotalCount,
-                delivered  = deliveredOrders.Pagination.TotalCount,
-                cancelled  = cancelledOrders.Pagination.TotalCount
-            }
-        });
+    [HttpPatch("users/{userId}/role")]
+    public async Task<IActionResult> ChangeRole(string userId, [FromQuery] string role)
+    {
+        await _adminService.ChangeUserRoleAsync(userId, role);
+        return UpdatedResponse();
     }
 }

@@ -35,7 +35,10 @@ public class OrderController : BaseApiController
         return CreatedResponse(new { id });
     }
 
-    [HttpDelete("{id}/cancel")]
+    /// <summary>
+    /// Sifarişi ləğv et — PATCH istifadə edilir (Cancel bir dəyişiklikdir, silmə deyil)
+    /// </summary>
+    [HttpPatch("{id}/cancel")]
     public async Task<IActionResult> Cancel(int id)
     {
         var message = await _service.CancelAsync(id, UserId);

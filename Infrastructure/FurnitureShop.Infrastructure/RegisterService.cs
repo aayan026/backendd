@@ -16,34 +16,38 @@ public static class RegisterService
         if (string.IsNullOrWhiteSpace(jwtSecret))
             throw new InvalidOperationException("JWT:Secret must be configured via appsettings or environment variables.");
 
+        // ── Token ──────────────────────────────────────────────────────────
         services.AddScoped<ITokenService, TokenService>();
 
+        // ── Email ──────────────────────────────────────────────────────────
+        services.AddScoped<IEmailService, EmailService>();
+
+        // ── File Upload ────────────────────────────────────────────────────
+        services.AddScoped<IFileUploadService, LocalFileUploadService>();
+
+        // ── Payment (Stripe) ───────────────────────────────────────────────
+        services.AddScoped<IPaymentService, PaymentService>();
+
+        // ── JWT Authentication ─────────────────────────────────────────────
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme             = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
+                ValidateIssuer           = true,
+                ValidateAudience         = true,
+                ValidateLifetime         = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = configuration["JWT:Issuer"],
-                ValidAudience = configuration["JWT:Audience"],
-                IssuerSigningKey = new SymmetricSecurityKey(
+                ValidIssuer              = configuration["JWT:Issuer"],
+                ValidAudience            = configuration["JWT:Audience"],
+                IssuerSigningKey         = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(jwtSecret))
             };
-        });
-
-        services.Configure<Microsoft.AspNetCore.Authentication.AuthenticationOptions>(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
         });
     }
 }

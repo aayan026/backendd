@@ -12,23 +12,23 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class DiscountCodeService : IDiscountCodeService
 {
-    private readonly IDiscountCodeReadRepository _readRepo;
+    private readonly IDiscountCodeReadRepository  _readRepo;
     private readonly IDiscountCodeWriteRepository _writeRepo;
-    private readonly ILanguageService _langService;
-    private readonly IMapper _mapper;
+    private readonly ILanguageService             _langService;
+    private readonly IMapper                      _mapper;
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public DiscountCodeService(
-        IDiscountCodeReadRepository readRepo,
+        IDiscountCodeReadRepository  readRepo,
         IDiscountCodeWriteRepository writeRepo,
-        ILanguageService langService,
-        IMapper mapper)
+        ILanguageService             langService,
+        IMapper                      mapper)
     {
-        _readRepo = readRepo;
-        _writeRepo = writeRepo;
+        _readRepo    = readRepo;
+        _writeRepo   = writeRepo;
         _langService = langService;
-        _mapper = mapper;
+        _mapper      = mapper;
     }
 
     public async Task<DiscountCodeValidationResult> ValidateAsync(ValidateDiscountCodeDto dto)
@@ -71,10 +71,11 @@ public class DiscountCodeService : IDiscountCodeService
 
         return new DiscountCodeValidationResult
         {
-            IsValid = true,
-            Message = ValidationMessages.Get(Lang, "Success"),
+            IsValid        = true,
+            Message        = ValidationMessages.Get(Lang, "Success"),
+            DiscountCodeId = code.Id,
             DiscountAmount = discount,
-            FinalTotal = dto.OrderTotal - discount
+            FinalTotal     = dto.OrderTotal - discount
         };
     }
 
