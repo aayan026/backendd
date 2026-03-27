@@ -1,6 +1,5 @@
 namespace FurnitureShop.Application.Common.Responses;
 
-// Controller-lərdə [FromQuery] ilə istifadə edilir
 public class PaginationParams
 {
     private int _pageSize = 20;

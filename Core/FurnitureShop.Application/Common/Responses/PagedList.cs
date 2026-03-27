@@ -6,8 +6,6 @@ public class PagedList<T>
 {
     public List<T> Items { get; set; } = new();
     public PaginationMeta Pagination { get; set; } = null!;
-
-    // IQueryable-dan avtomatik pagination — DB-də COUNT + SKIP + TAKE edir
     public static async Task<PagedList<T>> CreateAsync(IQueryable<T> query, int page, int pageSize)
     {
         page = page < 1 ? 1 : page;
@@ -25,8 +23,6 @@ public class PagedList<T>
             Pagination = new PaginationMeta(page, pageSize, totalCount)
         };
     }
-
-    // In-memory list-dən pagination (artıq yüklənmiş data üçün)
     public static PagedList<T> Create(IEnumerable<T> source, int page, int pageSize)
     {
         page = page < 1 ? 1 : page;

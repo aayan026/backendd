@@ -38,7 +38,7 @@ public class AdminService : IAdminService
         {
             Revenue   = revenue,
             UserCount = userCount,
-            Orders    = new AdminDashboardDto.OrderStatsDto
+            Orders    = new OrderStatsDto
             {
                 Total      = await _orderReadRepo.GetTotalCountAsync(),
                 Pending    = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Pending),
@@ -93,13 +93,13 @@ public class AdminService : IAdminService
 
         return new AdminUserDto
         {
-            Id          = user.Id,
-            Name        = user.Name,
-            Surname     = user.Surname,
-            Email       = user.Email ?? "",
+            Id= user.Id,
+            Name= user.Name,
+            Surname= user.Surname,
+            Email= user.Email ?? "",
             PhoneNumber = user.PhoneNumber,
-            IsLocked    = lockout,
-            Roles       = roles
+            IsLocked= lockout,
+            Roles= roles
         };
     }
 

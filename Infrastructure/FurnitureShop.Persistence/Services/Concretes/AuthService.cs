@@ -123,14 +123,12 @@ public class AuthService : IAuthService
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
     {
-        // User enumeration riskini azaltmaq üçün: user yoxdursa da uğurlu cavab qaytarırıq
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
             return;
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-        // Email göndər — fire-and-forget (exception burada istifadəçiyə göstərilməsin)
         _ = _emailService.SendForgotPasswordAsync(
             user.Email!, $"{user.Name} {user.Surname}", token, Lang);
     }

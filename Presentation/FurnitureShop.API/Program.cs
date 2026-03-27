@@ -164,20 +164,31 @@ try
         var adminPassword = builder.Configuration["SeedAdmin:Password"];
         var adminUser     = await userManager.FindByEmailAsync(adminEmail);
 
-        if (adminUser is null && !string.IsNullOrWhiteSpace(adminPassword))
+        if (!string.IsNullOrWhiteSpace(adminPassword))
         {
-            adminUser = new AppUser
+            if (adminUser == null)
             {
-                UserName = adminEmail,
-                Email    = adminEmail,
-                Name     = "Admin",
-                Surname  = "Admin"
-            };
-            var createResult = await userManager.CreateAsync(adminUser, adminPassword);
-            if (!createResult.Succeeded)
-                Log.Warning("Admin seed xətası: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
-        }
+                adminUser = new AppUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    Name = "Admin",
+                    Surname = "Admin"
+                };
 
+                var result = await userManager.CreateAsync(adminUser, adminPassword);
+                if (!result.Succeeded)
+                    Log.Warning("Admin seed xətası: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+            else
+            {
+                var token = await userManager.GeneratePasswordResetTokenAsync(adminUser);
+                var resetResult = await userManager.ResetPasswordAsync(adminUser, token, adminPassword);
+
+                if (!resetResult.Succeeded)
+                    Log.Warning("Password reset xətası: {Errors}", string.Join(", ", resetResult.Errors.Select(e => e.Description)));
+            }
+        }
         if (adminUser is not null && !await userManager.IsInRoleAsync(adminUser, "Admin"))
             await userManager.AddToRoleAsync(adminUser, "Admin");
     }

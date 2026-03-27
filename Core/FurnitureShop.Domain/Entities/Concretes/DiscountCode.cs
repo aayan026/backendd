@@ -19,6 +19,5 @@ public class DiscountCode :BaseEntity
     public int UsedCount { get; set; } = 0;
     public DateTime? ExpiresAt { get; set; }
     public DiscountStatus Status { get; set; } = DiscountStatus.Active;
-    // Navigation
     public ICollection<Order> Orders { get; set; } = new List<Order>();
 }

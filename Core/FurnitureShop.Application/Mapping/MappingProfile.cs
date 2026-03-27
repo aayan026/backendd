@@ -19,13 +19,10 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        // ── Product ───────────────────────────────────────────────────────
         CreateMap<ProductImage, ProductImageDto>();
 
         CreateMap<ProductColor, ProductColorDto>();
 
-        // Product → ProductDto
-        // Name, Description translation-dan gəlir — servis tərəfindən set edilir
         CreateMap<Product, ProductDto>()
             .ForMember(d => d.Name,         o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Name))
             .ForMember(d => d.Description,  o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Description))

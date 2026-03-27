@@ -15,8 +15,3 @@ public class CreateProductDto
     public List<ProductTranslationDto> Translations { get; set; } = new();
 }
 
-public class CreateProductColorDto
-{
-    public string Name { get; set; } = null!;
-    public string HexCode { get; set; } = null!;
-}
