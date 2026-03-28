@@ -35,12 +35,13 @@ public class AuthService : IAuthService
         if (user is null)
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "InvalidCredentials"));
 
+        if (await _userManager.IsLockedOutAsync(user))
+            throw new UnauthorizedException(ValidationMessages.Get(Lang, "AccountLocked"));
+
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
         if (!isPasswordValid)
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "InvalidCredentials"));
 
-        if (await _userManager.IsLockedOutAsync(user))
-            throw new UnauthorizedException(ValidationMessages.Get(Lang, "AccountLocked"));
 
         var tokenResponse = await _tokenService.CreateTokenAsync(user);
 

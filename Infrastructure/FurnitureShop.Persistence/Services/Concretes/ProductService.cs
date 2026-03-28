@@ -26,19 +26,19 @@ public class ProductService : IProductService
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(10);
 
     public ProductService(
-        IProductReadRepository    readRepo,
+        IProductReadRepository readRepo,
         ICollectionReadRepository collectionReadRepo,
-        IProductWriteRepository   writeRepo,
-        ILanguageService          langService,
-        IMemoryCache              cache,
-        IMapper                   mapper)
+        IProductWriteRepository writeRepo,
+        ILanguageService langService,
+        IMemoryCache cache,
+        IMapper  mapper)
     {
-        _readRepo           = readRepo;
+        _readRepo= readRepo;
         _collectionReadRepo = collectionReadRepo;
-        _writeRepo          = writeRepo;
-        _langService        = langService;
-        _cache              = cache;
-        _mapper             = mapper;
+        _writeRepo= writeRepo;
+        _langService= langService;
+        _cache= cache;
+        _mapper= mapper;
     }
 
     public async Task<PagedList<ProductDto>> GetAllAsync(PaginationParams pagination)
@@ -158,7 +158,6 @@ public class ProductService : IProductService
         await _writeRepo.AddAsync(product);
         await _writeRepo.SaveChangesAsync();
 
-        // Cache temizle
         _cache.Remove($"featured_products_{Lang}");
 
         return product.Id;
@@ -173,7 +172,6 @@ public class ProductService : IProductService
         _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();
 
-        // Cache temizle
         _cache.Remove($"product_{dto.Id}_{Lang}");
         _cache.Remove($"featured_products_{Lang}");
     }
@@ -185,7 +183,6 @@ public class ProductService : IProductService
         _writeRepo.Delete(product);
         await _writeRepo.SaveChangesAsync();
 
-        // Cache temizle
         _cache.Remove($"product_{id}_{Lang}");
         _cache.Remove($"featured_products_{Lang}");
     }

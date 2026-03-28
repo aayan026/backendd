@@ -12,7 +12,8 @@ namespace FurnitureShop.Domain.Entities.Concretes;
 public class FurnitureCategory:BaseEntity
 {
     public ICollection<FurnitureCategoryTranslation> Translations { get; set; }
-    [JsonIgnore]
     public ICollection<Product> Products { get; set; }
+    public string ImageUrl { get; set; }
+
 
 }

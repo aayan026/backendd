@@ -12,6 +12,6 @@ public class UpdateProductDto
     public int Stock { get; set; }
     public int FurnitureCategoryId { get; set; }
     public List<CreateProductColorDto> Colors { get; set; } = new();
-    public List<string> ImageUrls { get; set; } = new();
+    public List<ProductImageDto> ImageUrls { get; set; } = new();
     public List<ProductTranslationDto> Translations { get; set; } = new();
 }

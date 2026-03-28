@@ -12,6 +12,5 @@ public class ProductTranslationConfiguration : IEntityTypeConfiguration<ProductT
 
         builder.Property(x => x.Lang).HasMaxLength(5);
         builder.Property(x => x.Name).HasMaxLength(200);
-        builder.Property(x => x.Title).HasMaxLength(200);
     }
 }
