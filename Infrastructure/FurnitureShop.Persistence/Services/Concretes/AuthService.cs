@@ -3,8 +3,10 @@ using FurnitureShop.Application.Exceptions;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Identity;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
@@ -14,6 +16,7 @@ public class AuthService : IAuthService
     private readonly ITokenService        _tokenService;
     private readonly IEmailService        _emailService;
     private readonly ILanguageService     _langService;
+    private readonly IConfiguration      _config;
 
     private string Lang => _langService.GetCurrentLanguage();
 
@@ -21,12 +24,14 @@ public class AuthService : IAuthService
         UserManager<AppUser> userManager,
         ITokenService        tokenService,
         IEmailService        emailService,
-        ILanguageService     langService)
+        ILanguageService     langService,
+        IConfiguration       config)
     {
         _userManager  = userManager;
         _tokenService = tokenService;
         _emailService = emailService;
         _langService  = langService;
+        _config       = config;
     }
 
     public async Task<TokenResponseDto> LoginAsync(LoginDto dto)
@@ -42,14 +47,7 @@ public class AuthService : IAuthService
         if (!isPasswordValid)
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "InvalidCredentials"));
 
-
-        var tokenResponse = await _tokenService.CreateTokenAsync(user);
-
-        user.RefreshToken           = tokenResponse.RefreshToken;
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-        await _userManager.UpdateAsync(user);
-
-        return tokenResponse;
+        return await CreateTokenAndSaveAsync(user);
     }
 
     public async Task<TokenResponseDto> RegisterAsync(RegisterDto dto)
@@ -69,20 +67,67 @@ public class AuthService : IAuthService
                 .GroupBy(e => e.Code.ToLower())
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList()
-                );
+                    g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
             throw new Application.Exceptions.ValidationException(errors);
         }
 
         await _userManager.AddToRoleAsync(user, "Customer");
+        return await CreateTokenAndSaveAsync(user);
+    }
 
-        var tokenResponse = await _tokenService.CreateTokenAsync(user);
+    public async Task<TokenResponseDto> GoogleLoginAsync(GoogleLoginDto dto)
+    {
+        var clientId = _config["Google:ClientId"]
+            ?? throw new InvalidOperationException("Google:ClientId konfiqurasiya edilməyib.");
 
-        user.RefreshToken           = tokenResponse.RefreshToken;
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-        await _userManager.UpdateAsync(user);
+        GoogleJsonWebSignature.Payload payload;
+        try
+        {
+            var settings = new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = new[] { clientId }
+            };
+            payload = await GoogleJsonWebSignature.ValidateAsync(dto.IdToken, settings);
+        }
+        catch (InvalidJwtException)
+        {
+            throw new UnauthorizedException(ValidationMessages.Get(Lang, "GoogleTokenInvalid"));
+        }
 
-        return tokenResponse;
+        var user = await _userManager.FindByEmailAsync(payload.Email);
+
+        if (user is null)
+        {
+            var nameParts = (payload.Name ?? "").Split(' ', 2);
+            user = new AppUser
+            {
+                UserName      = payload.Email,
+                Email         = payload.Email,
+                EmailConfirmed= true,
+                Name= nameParts.Length > 0 ? nameParts[0] : payload.Email,
+                Surname= nameParts.Length > 1 ? nameParts[1] : string.Empty
+            };
+
+            var result = await _userManager.CreateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors
+                    .GroupBy(e => e.Code.ToLower())
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
+                throw new Application.Exceptions.ValidationException(errors);
+            }
+
+            await _userManager.AddToRoleAsync(user, "Customer");
+        }
+        else
+        {
+            if (await _userManager.IsLockedOutAsync(user))
+                throw new UnauthorizedException(ValidationMessages.Get(Lang, "AccountLocked"));
+        }
+
+        return await CreateTokenAndSaveAsync(user);
     }
 
     public async Task<TokenResponseDto> RefreshTokenAsync(TokenResponseDto request)
@@ -125,13 +170,15 @@ public class AuthService : IAuthService
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user is null)
-            return;
+        if (user is null) return;
 
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-        _ = _emailService.SendForgotPasswordAsync(
-            user.Email!, $"{user.Name} {user.Surname}", token, Lang);
+        try
+        {
+            await _emailService.SendForgotPasswordAsync(
+                user.Email!, $"{user.Name} {user.Surname}", token, Lang);
+        }
+        catch { }
     }
 
     public async Task ResetPasswordAsync(ResetPasswordDto dto)
@@ -140,16 +187,25 @@ public class AuthService : IAuthService
         if (user is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "UserNotFound"));
 
-        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
+        var decodedToken = Uri.UnescapeDataString(dto.Token);
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
         if (!result.Succeeded)
         {
             var errors = result.Errors
                 .GroupBy(e => e.Code.ToLower())
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList()
-                );
+                    g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
             throw new Application.Exceptions.ValidationException(errors);
         }
+    }
+
+    private async Task<TokenResponseDto> CreateTokenAndSaveAsync(AppUser user)
+    {
+        var tokenResponse = await _tokenService.CreateTokenAsync(user);
+        user.RefreshToken           = tokenResponse.RefreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        await _userManager.UpdateAsync(user);
+        return tokenResponse;
     }
 }

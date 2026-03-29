@@ -3,18 +3,17 @@ using FurnitureShop.Application.Dtos.Product;
 
 namespace FurnitureShop.Application.Validation.Concrete;
 
-public class CreateProductValidator : AbstractValidator<CreateProductDto>
+public class UpdateProductValidator : AbstractValidator<UpdateProductDto>
 {
     private static readonly string[] RequiredLangs = { "az", "ru", "en" };
 
-    public CreateProductValidator()
+    public UpdateProductValidator()
     {
+        RuleFor(x => x.Id)
+            .GreaterThan(0).WithMessage("InvalidId|Id");
+
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("GreaterThanZero|Price");
-
-        RuleFor(x => x.PriceExtra)
-            .GreaterThan(0).When(x => x.PriceExtra.HasValue)
-            .WithMessage("GreaterThanZero|PriceExtra");
 
         RuleFor(x => x.Stock)
             .GreaterThanOrEqualTo(0).WithMessage("GreaterThanZero|Stock");
@@ -22,24 +21,7 @@ public class CreateProductValidator : AbstractValidator<CreateProductDto>
         RuleFor(x => x.FurnitureCategoryId)
             .GreaterThan(0).WithMessage("InvalidId|CategoryId");
 
-        RuleFor(x => x.Colors)
-            .NotNull().WithMessage("Required|Colors")
-            .Must(x => x.Count > 0).WithMessage("MinCount|Colors|1");
-
-        RuleForEach(x => x.Colors).ChildRules(color =>
-        {
-            color.RuleFor(c => c.Name)
-                .NotEmpty().WithMessage("Required|ColorName");
-            color.RuleFor(c => c.HexCode)
-                .NotEmpty().WithMessage("Required|HexCode")
-                .Matches("^#[0-9A-Fa-f]{6}$").WithMessage("InvalidHexCode|HexCode");
-        });
-
-        RuleFor(x => x.ImageUrls)
-            .NotNull().WithMessage("Required|Images")
-            .Must(x => x.Count > 0).WithMessage("MinCount|Images|1");
-
-        // 3 dil məcburi: az, ru, en
+        // 3 dil məcburi
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))

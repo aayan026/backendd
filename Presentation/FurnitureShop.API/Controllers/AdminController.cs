@@ -10,26 +10,22 @@ namespace FurnitureShop.API.Controllers;
 public class AdminController : BaseApiController
 {
     private readonly IAdminService _adminService;
+    private static readonly string[] _allowedRoles = { "Admin", "Customer" };
 
     public AdminController(IAdminService adminService)
     {
         _adminService = adminService;
     }
 
-    /// <summary>
-    /// Dashboard — order statistikaları + revenue + user sayı
-    /// </summary>
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard()
         => OkResponse(await _adminService.GetDashboardAsync());
-
-    // ── User Management ────────────────────────────────────────────────────
 
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] PaginationParams pagination)
     {
         var result = await _adminService.GetUsersAsync(pagination);
-        return Ok(Application.Common.Responses.ApiResponse<object>.Ok(result.Items, result.Pagination, Msg("Success")));
+        return Ok(ApiResponse<object>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
 
     [HttpGet("users/{userId}")]
@@ -50,9 +46,18 @@ public class AdminController : BaseApiController
         return UpdatedResponse();
     }
 
+    // FIX: role parametri yoxlanılır
     [HttpPatch("users/{userId}/role")]
     public async Task<IActionResult> ChangeRole(string userId, [FromQuery] string role)
     {
+        if (string.IsNullOrWhiteSpace(role) || !_allowedRoles.Contains(role))
+            return BadRequest(ApiResponse<object>.ValidationError(
+                new Dictionary<string, List<string>>
+                {
+                    { "role", new List<string> { $"Rol '{role}' etibarsızdır. İcazə verilənlər: {string.Join(", ", _allowedRoles)}" } }
+                },
+                Msg("ValidationError")));
+
         await _adminService.ChangeUserRoleAsync(userId, role);
         return UpdatedResponse();
     }

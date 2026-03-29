@@ -16,19 +16,10 @@ public static class RegisterService
         if (string.IsNullOrWhiteSpace(jwtSecret))
             throw new InvalidOperationException("JWT:Secret must be configured via appsettings or environment variables.");
 
-        // ── Token ──────────────────────────────────────────────────────────
         services.AddScoped<ITokenService, TokenService>();
-
-        // ── Email ──────────────────────────────────────────────────────────
         services.AddScoped<IEmailService, EmailService>();
-
-        // ── File Upload ────────────────────────────────────────────────────
         services.AddScoped<IFileUploadService, LocalFileUploadService>();
-
-        // ── Payment (Stripe) ───────────────────────────────────────────────
         services.AddScoped<IPaymentService, PaymentService>();
-
-        // ── JWT Authentication ─────────────────────────────────────────────
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

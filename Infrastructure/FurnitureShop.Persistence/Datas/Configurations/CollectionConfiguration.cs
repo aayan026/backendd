@@ -42,7 +42,7 @@ public class CollectionCategoryConfiguration : IEntityTypeConfiguration<Collecti
     public void Configure(EntityTypeBuilder<CollectionCategory> builder)
     {
         builder.Property(x => x.TotalPrice).HasColumnType("decimal(18,2)");
-        builder.Property(x => x.ImagesUrl).HasMaxLength(500);
+        builder.Property(x => x.ImageUrl).HasMaxLength(500);
 
         builder.HasMany(x => x.Translations)
             .WithOne(t => t.CollectionCategory)

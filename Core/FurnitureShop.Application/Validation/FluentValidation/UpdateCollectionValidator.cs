@@ -1,30 +1,29 @@
 using FluentValidation;
-using FurnitureShop.Application.Dtos.Campaign;
+using FurnitureShop.Application.Dtos.Collection;
 
 namespace FurnitureShop.Application.Validation.Concrete;
 
-public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
+public class UpdateCollectionValidator : AbstractValidator<UpdateCollectionDto>
 {
     private static readonly string[] RequiredLangs = { "az", "ru", "en" };
 
-    public CreateCampaignValidator()
+    public UpdateCollectionValidator()
     {
-        RuleFor(x => x.DiscountPercent)
-            .GreaterThan(0).When(x => x.DiscountPercent.HasValue)
-            .WithMessage("GreaterThanZero|DiscountPercent")
-            .LessThanOrEqualTo(100).When(x => x.DiscountPercent.HasValue)
-            .WithMessage("MaxLength|DiscountPercent|100");
+        RuleFor(x => x.Id)
+            .GreaterThan(0).WithMessage("InvalidId|Id");
 
-        // FIX: >= (bugünkü tarixlə yaratmaq olar)
-        RuleFor(x => x.StartDate)
-            .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
-            .WithMessage("FutureDate|ScheduledDate");
+        RuleFor(x => x.TotalPrice)
+            .GreaterThan(0).WithMessage("GreaterThanZero|TotalPrice");
 
-        RuleFor(x => x.EndDate)
-            .GreaterThan(x => x.StartDate)
-            .WithMessage("FutureDate|ScheduledDate");
+        RuleFor(x => x.DiscountPrice)
+            .GreaterThan(0).When(x => x.DiscountPrice.HasValue)
+            .WithMessage("GreaterThanZero|DiscountPrice")
+            .LessThan(x => x.TotalPrice).When(x => x.DiscountPrice.HasValue)
+            .WithMessage("DiscountLessThanTotal|DiscountPrice");
 
-        // 3 dil məcburi
+        RuleFor(x => x.CollectionCategoryId)
+            .GreaterThan(0).WithMessage("InvalidId|CategoryId");
+
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))
@@ -35,7 +34,7 @@ public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
             t.RuleFor(x => x.Lang)
                 .NotEmpty().WithMessage("Required|LangCode")
                 .Must(l => RequiredLangs.Contains(l)).WithMessage("InvalidLang|LangCode");
-            t.RuleFor(x => x.Title)
+            t.RuleFor(x => x.Name)
                 .NotEmpty().WithMessage("Required|Name")
                 .MaximumLength(200).WithMessage("MaxLength|Name|200");
         });

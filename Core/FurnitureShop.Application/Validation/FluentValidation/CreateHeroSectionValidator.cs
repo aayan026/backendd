@@ -1,29 +1,14 @@
 using FluentValidation;
-using FurnitureShop.Application.Dtos.Campaign;
+using FurnitureShop.Application.Dtos.HeroSection;
 
 namespace FurnitureShop.Application.Validation.Concrete;
 
-public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
+public class CreateHeroSectionValidator : AbstractValidator<CreateHeroSectionDto>
 {
     private static readonly string[] RequiredLangs = { "az", "ru", "en" };
 
-    public CreateCampaignValidator()
+    public CreateHeroSectionValidator()
     {
-        RuleFor(x => x.DiscountPercent)
-            .GreaterThan(0).When(x => x.DiscountPercent.HasValue)
-            .WithMessage("GreaterThanZero|DiscountPercent")
-            .LessThanOrEqualTo(100).When(x => x.DiscountPercent.HasValue)
-            .WithMessage("MaxLength|DiscountPercent|100");
-
-        // FIX: >= (bugünkü tarixlə yaratmaq olar)
-        RuleFor(x => x.StartDate)
-            .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
-            .WithMessage("FutureDate|ScheduledDate");
-
-        RuleFor(x => x.EndDate)
-            .GreaterThan(x => x.StartDate)
-            .WithMessage("FutureDate|ScheduledDate");
-
         // 3 dil məcburi
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")

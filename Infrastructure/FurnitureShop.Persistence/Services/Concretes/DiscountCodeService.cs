@@ -80,16 +80,10 @@ public class DiscountCodeService : IDiscountCodeService
     }
 
     public async Task<IEnumerable<DiscountCodeDto>> GetAllAsync()
-    {
-        var codes = await _readRepo.GetAllAsync();
-        return _mapper.Map<IEnumerable<DiscountCodeDto>>(codes);
-    }
+        => _mapper.Map<IEnumerable<DiscountCodeDto>>(await _readRepo.GetAllAsync());
 
     public async Task<IEnumerable<DiscountCodeDto>> GetActiveAsync()
-    {
-        var codes = await _readRepo.GetActiveAsync();
-        return _mapper.Map<IEnumerable<DiscountCodeDto>>(codes);
-    }
+        => _mapper.Map<IEnumerable<DiscountCodeDto>>(await _readRepo.GetActiveAsync());
 
     public async Task<DiscountCodeDto?> GetByIdAsync(int id)
     {
@@ -120,7 +114,8 @@ public class DiscountCodeService : IDiscountCodeService
     {
         var code = await _readRepo.GetByIdAsync(id);
         if (code is null) throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
-        _writeRepo.RemoveAsync(code);
+        // FIX: RemoveAsync await edilir
+        await _writeRepo.RemoveAsync(code);
         await _writeRepo.SaveChangesAsync();
     }
 }

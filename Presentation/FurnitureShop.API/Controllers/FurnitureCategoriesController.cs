@@ -1,3 +1,4 @@
+using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Dtos.FurnitureCategory;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
@@ -31,10 +32,16 @@ public class FurnitureCategoriesController : BaseApiController
         return CreatedResponse(new { id });
     }
 
+    // FIX: {id} route parametri əlavə edildi + id uyğunluğu yoxlanılır
     [Authorize(Roles = "Admin")]
-    [HttpPut]
-    public async Task<IActionResult> Update([FromBody] UpdateFurnitureCategoryDto dto)
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateFurnitureCategoryDto dto)
     {
+        if (id != dto.Id)
+            return BadRequest(ApiResponse<object>.ValidationError(
+                new Dictionary<string, List<string>> { { "id", new List<string> { Msg("IdMismatch") } } },
+                Msg("ValidationError")));
+
         await _service.UpdateAsync(dto);
         return UpdatedResponse();
     }

@@ -12,7 +12,7 @@ public class CollectionReadRepository : GenericReadRepository<Collection>, IColl
 
     public async Task<IEnumerable<Collection>> GetByCategoryAsync(int categoryId, string lang)
         => await Table
-            .Where(x => x.CollectionCategoryId == categoryId)
+            .Where(x => x.CollectionCategoryId == categoryId && !x.IsDeleted)
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .OrderBy(x => x.DisplayOrder)
             .ToListAsync();
@@ -20,8 +20,11 @@ public class CollectionReadRepository : GenericReadRepository<Collection>, IColl
     public async Task<Collection?> GetWithProductsAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
-            .Include(x => x.Products)
+            // FIX: update üçün bütün dillər yüklənir
+            .Include(x => x.Translations)
+            .Include(x => x.CollectionCategory)
+                .ThenInclude(c => c!.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Products.Where(p => !p.IsDeleted))
                 .ThenInclude(p => p.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Products)
                 .ThenInclude(p => p.Images.Where(i => i.IsPrimary))
@@ -29,6 +32,7 @@ public class CollectionReadRepository : GenericReadRepository<Collection>, IColl
 
     public async Task<IEnumerable<Collection>> GetAllWithTranslationsAsync(string lang)
         => await Table
+            .Where(x => !x.IsDeleted)
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .OrderBy(x => x.DisplayOrder)
             .ToListAsync();

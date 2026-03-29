@@ -48,4 +48,13 @@ public class AuthController : BaseApiController
         await _authService.ResetPasswordAsync(dto);
         return UpdatedResponse();
     }
+
+    /// <summary>
+    /// Google ilə daxil ol.
+    /// Frontend Google-dan aldığı idToken-i buraya göndərir.
+    /// User mövcuddursa login, yoxdursa avtomatik register olur.
+    /// </summary>
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto dto)
+        => OkResponse(await _authService.GoogleLoginAsync(dto));
 }

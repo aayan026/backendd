@@ -12,30 +12,28 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class CollectionCategoryService : ICollectionCategoryService
 {
-    private readonly ICollectionCategoryReadRepository _readRepo;
+    private readonly ICollectionCategoryReadRepository  _readRepo;
     private readonly ICollectionCategoryWriteRepository _writeRepo;
-    private readonly ILanguageService _langService;
-    private readonly IMapper _mapper;
+    private readonly ILanguageService                   _langService;
+    private readonly IMapper                            _mapper;
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public CollectionCategoryService(
-        ICollectionCategoryReadRepository readRepo,
+        ICollectionCategoryReadRepository  readRepo,
         ICollectionCategoryWriteRepository writeRepo,
-        ILanguageService langService,
-        IMapper mapper)
+        ILanguageService                   langService,
+        IMapper                            mapper)
     {
-        _readRepo = readRepo;
-        _writeRepo = writeRepo;
+        _readRepo    = readRepo;
+        _writeRepo   = writeRepo;
         _langService = langService;
-        _mapper = mapper;
+        _mapper      = mapper;
     }
 
     public async Task<IEnumerable<CollectionCategoryDto>> GetAllAsync()
-    {
-        var categories = await _readRepo.GetAllWithTranslationsAsync(Lang);
-        return _mapper.Map<IEnumerable<CollectionCategoryDto>>(categories);
-    }
+        => _mapper.Map<IEnumerable<CollectionCategoryDto>>(
+            await _readRepo.GetAllWithTranslationsAsync(Lang));
 
     public async Task<CollectionCategoryDto?> GetByIdAsync(int id)
     {
@@ -47,12 +45,13 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task<int> CreateAsync(CreateCollectionCategoryDto dto)
     {
-        var category = _mapper.Map<CollectionCategory>(dto);
-        category.Translations = dto.Translations.Select(t => new CollectionCategoryTranslation
+        var category = new CollectionCategory
         {
-            Lang = t.Lang,
-            Name = t.Name
-        }).ToList();
+            ImageUrl     = dto.ImageUrl ?? string.Empty,
+            Translations = dto.Translations
+                .Select(t => new CollectionCategoryTranslation { Lang = t.Lang, Name = t.Name })
+                .ToList()
+        };
 
         await _writeRepo.AddAsync(category);
         await _writeRepo.SaveChangesAsync();
@@ -61,10 +60,23 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task UpdateAsync(UpdateCollectionCategoryDto dto)
     {
-        var category = await _readRepo.GetByIdAsync(dto.Id);
+        // FIX: bütün dillər ilə yüklə ("az" deyil)
+        var category = await _readRepo.GetWithCollectionsAsync(dto.Id, "az");
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
-        _mapper.Map(dto, category);
+
+        category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
+
+        // FIX: köhnə translations-ları sil, yenilərini əlavə et
+        category.Translations.Clear();
+        foreach (var t in dto.Translations)
+            category.Translations.Add(new CollectionCategoryTranslation
+            {
+                Lang                 = t.Lang,
+                Name                 = t.Name,
+                CollectionCategoryId = dto.Id
+            });
+
         _writeRepo.Update(category);
         await _writeRepo.SaveChangesAsync();
     }

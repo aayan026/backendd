@@ -19,42 +19,46 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
+        // ── Product ───────────────────────────────────────────────────────
         CreateMap<ProductImage, ProductImageDto>();
-
         CreateMap<ProductColor, ProductColorDto>();
 
         CreateMap<Product, ProductDto>()
-            .ForMember(d => d.Name,         o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Name))
-            .ForMember(d => d.Description,  o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Description))
+            .ForMember(d => d.Name,         o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Name
+                    : string.Empty))
+            .ForMember(d => d.Description,  o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Description
+                    : null))
             .ForMember(d => d.CategoryName, o => o.MapFrom(s =>
-                s.FurnitureCategory != null
-                    ? s.FurnitureCategory.Translations.FirstOrDefault()!.Name
+                s.FurnitureCategory != null && s.FurnitureCategory.Translations.Any()
+                    ? s.FurnitureCategory.Translations.First().Name
                     : null))
             .ForMember(d => d.Images,  o => o.MapFrom(s => s.Images))
             .ForMember(d => d.Colors,  o => o.MapFrom(s => s.Colors));
 
-        // CreateProductDto → Product
         CreateMap<CreateProductDto, Product>()
-            .ForMember(d => d.Images,      o => o.Ignore())  // servis əl ilə qurur
-            .ForMember(d => d.Colors,      o => o.Ignore()) 
-            .ForMember(d => d.Translations,o => o.Ignore()); // servis əl ilə qurur
+            .ForMember(d => d.Images,       o => o.Ignore())
+            .ForMember(d => d.Colors,       o => o.Ignore())
+            .ForMember(d => d.Translations, o => o.Ignore());
 
-        // UpdateProductDto → Product
         CreateMap<UpdateProductDto, Product>()
-            .ForMember(d => d.Images,o => o.Ignore())
-            .ForMember(d => d.Colors,o => o.Ignore())
-            .ForMember(d => d.Translations,o => o.Ignore());
+            .ForMember(d => d.Images,       o => o.Ignore())
+            .ForMember(d => d.Colors,       o => o.Ignore())
+            .ForMember(d => d.Translations, o => o.Ignore());
 
-        // CreateProductColorDto → ProductColor
         CreateMap<CreateProductColorDto, ProductColor>();
-
-        // ProductTranslationDto → ProductTranslation
         CreateMap<ProductTranslationDto, ProductTranslation>();
 
         // ── FurnitureCategory ─────────────────────────────────────────────
         CreateMap<FurnitureCategory, FurnitureCategoryDto>()
-            .ForMember(d => d.Name,     o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Name))
-            .ForMember(d => d.ImageUrl, o => o.Ignore()); // entity-də ImageUrl yoxdur
+            .ForMember(d => d.Name,     o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Name
+                    : string.Empty))
+            .ForMember(d => d.ImageUrl, o => o.MapFrom(s => s.ImageUrl));
 
         CreateMap<CreateFurnitureCategoryDto, FurnitureCategory>()
             .ForMember(d => d.Translations, o => o.Ignore());
@@ -62,17 +66,22 @@ public class MappingProfile : Profile
         CreateMap<UpdateFurnitureCategoryDto, FurnitureCategory>()
             .ForMember(d => d.Translations, o => o.Ignore());
 
-        CreateMap<FurnitureCategoryTranslationDto, FurnitureCategoryTranslation>()
-            .ForMember(d => d.Lang, o => o.MapFrom(s => s.Lang));
+        CreateMap<FurnitureCategoryTranslationDto, FurnitureCategoryTranslation>();
 
         // ── Collection ────────────────────────────────────────────────────
         CreateMap<Collection, CollectionDto>()
-            .ForMember(d => d.Name,         o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Name))
-            .ForMember(d => d.Description,  o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Description))
+            .ForMember(d => d.Name,         o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Name
+                    : string.Empty))
+            .ForMember(d => d.Description,  o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Description
+                    : null))
             .ForMember(d => d.ImageUrl,     o => o.MapFrom(s => s.ImagesUrl))
             .ForMember(d => d.CategoryName, o => o.MapFrom(s =>
-                s.CollectionCategory != null
-                    ? s.CollectionCategory.Translations.FirstOrDefault()!.Name
+                s.CollectionCategory != null && s.CollectionCategory.Translations.Any()
+                    ? s.CollectionCategory.Translations.First().Name
                     : null))
             .ForMember(d => d.Products, o => o.MapFrom(s => s.Products));
 
@@ -90,15 +99,18 @@ public class MappingProfile : Profile
 
         // ── CollectionCategory ────────────────────────────────────────────
         CreateMap<CollectionCategory, CollectionCategoryDto>()
-            .ForMember(d => d.Name,     o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Name))
+            .ForMember(d => d.Name,     o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Name
+                    : string.Empty))
             .ForMember(d => d.ImageUrl, o => o.MapFrom(s => s.ImageUrl));
 
         CreateMap<CreateCollectionCategoryDto, CollectionCategory>()
-            .ForMember(d => d.ImageUrl,    o => o.MapFrom(s => s.ImageUrl))
+            .ForMember(d => d.ImageUrl,     o => o.MapFrom(s => s.ImageUrl))
             .ForMember(d => d.Translations, o => o.Ignore());
 
         CreateMap<UpdateCollectionCategoryDto, CollectionCategory>()
-            .ForMember(d => d.ImageUrl,    o => o.MapFrom(s => s.ImageUrl))
+            .ForMember(d => d.ImageUrl,     o => o.MapFrom(s => s.ImageUrl))
             .ForMember(d => d.Translations, o => o.Ignore());
 
         CreateMap<CollectionCategoryTranslationDto, CollectionCategoryTranslation>();
@@ -106,11 +118,17 @@ public class MappingProfile : Profile
         // ── Order ─────────────────────────────────────────────────────────
         CreateMap<OrderItem, OrderItemDto>()
             .ForMember(d => d.ProductName,  o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Translations.FirstOrDefault()!.Name : null))
+                s.Product != null && s.Product.Translations.Any()
+                    ? s.Product.Translations.First().Name
+                    : null))
             .ForMember(d => d.ProductImage, o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Images.FirstOrDefault(i => i.IsPrimary)!.ImageUrl : null))
+                s.Product != null && s.Product.Images.Any(i => i.IsPrimary)
+                    ? s.Product.Images.First(i => i.IsPrimary).ImageUrl
+                    : null))
             .ForMember(d => d.CollectionName, o => o.MapFrom(s =>
-                s.Collection != null ? s.Collection.Translations.FirstOrDefault()!.Name : null));
+                s.Collection != null && s.Collection.Translations.Any()
+                    ? s.Collection.Translations.First().Name
+                    : null));
 
         CreateMap<DeliveryInfo, DeliveryInfoDto>();
 
@@ -123,12 +141,10 @@ public class MappingProfile : Profile
             .ForMember(d => d.DeliveryInfo, o => o.MapFrom(s => s.DeliveryInfo));
 
         CreateMap<CreateDeliveryInfoDto, DeliveryInfo>();
-
         CreateMap<CreateOrderItemDto, OrderItem>();
-
         CreateMap<CreateOrderDto, Order>()
             .ForMember(d => d.Items,        o => o.MapFrom(s => s.Items))
-            .ForMember(d => d.DeliveryInfo, o => o.Ignore()); // ayrıca map edilir
+            .ForMember(d => d.DeliveryInfo, o => o.Ignore());
 
         // ── Address ───────────────────────────────────────────────────────
         CreateMap<Address, AddressDto>();
@@ -138,13 +154,19 @@ public class MappingProfile : Profile
         // ── Cart ──────────────────────────────────────────────────────────
         CreateMap<CartItem, CartItemDto>()
             .ForMember(d => d.ProductName,    o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Translations.FirstOrDefault()!.Name : null))
+                s.Product != null && s.Product.Translations.Any()
+                    ? s.Product.Translations.First().Name
+                    : null))
             .ForMember(d => d.ProductImage,   o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Images.FirstOrDefault(i => i.IsPrimary)!.ImageUrl : null))
+                s.Product != null && s.Product.Images.Any(i => i.IsPrimary)
+                    ? s.Product.Images.First(i => i.IsPrimary).ImageUrl
+                    : null))
             .ForMember(d => d.ProductPrice,   o => o.MapFrom(s =>
                 s.Product != null ? s.Product.Price : (decimal?)null))
             .ForMember(d => d.CollectionName, o => o.MapFrom(s =>
-                s.Collection != null ? s.Collection.Translations.FirstOrDefault()!.Name : null))
+                s.Collection != null && s.Collection.Translations.Any()
+                    ? s.Collection.Translations.First().Name
+                    : null))
             .ForMember(d => d.CollectionPrice,o => o.MapFrom(s =>
                 s.Collection != null ? s.Collection.TotalPrice : (decimal?)null))
             .ForMember(d => d.TotalPrice,     o => o.MapFrom(s =>
@@ -157,39 +179,63 @@ public class MappingProfile : Profile
         CreateMap<Cart, CartDto>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items));
 
-       CreateMap<WishlistItem, WishlistItemDto>()
+        // ── Wishlist ──────────────────────────────────────────────────────
+        CreateMap<WishlistItem, WishlistItemDto>()
             .ForMember(d => d.ProductName,    o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Translations.FirstOrDefault()!.Name : null))
+                s.Product != null && s.Product.Translations.Any()
+                    ? s.Product.Translations.First().Name
+                    : null))
             .ForMember(d => d.ProductImage,   o => o.MapFrom(s =>
-                s.Product != null ? s.Product.Images.FirstOrDefault(i => i.IsPrimary)!.ImageUrl : null))
+                s.Product != null && s.Product.Images.Any(i => i.IsPrimary)
+                    ? s.Product.Images.First(i => i.IsPrimary).ImageUrl
+                    : null))
             .ForMember(d => d.ProductPrice,   o => o.MapFrom(s =>
                 s.Product != null ? s.Product.Price : (decimal?)null))
             .ForMember(d => d.CollectionName, o => o.MapFrom(s =>
-                s.Collection != null ? s.Collection.Translations.FirstOrDefault()!.Name : null));
+                s.Collection != null && s.Collection.Translations.Any()
+                    ? s.Collection.Translations.First().Name
+                    : null));
 
         CreateMap<Wishlist, WishlistDto>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items));
 
+        // ── Campaign ──────────────────────────────────────────────────────
         CreateMap<Campaign, CampaignDto>()
-            .ForMember(d => d.Title,       o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Title))
-            .ForMember(d => d.Description, o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Description))
-            .ForMember(d => d.ButtonText,  o => o.MapFrom(s => s.Translations.FirstOrDefault()!.ButtonText));
+            .ForMember(d => d.Title,       o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Title
+                    : string.Empty))
+            .ForMember(d => d.Description, o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Description
+                    : null))
+            .ForMember(d => d.ButtonText,  o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().ButtonText
+                    : null));
 
         CreateMap<CreateCampaignDto, Campaign>()
             .ForMember(d => d.Translations, o => o.Ignore());
 
         // ── HeroSection ───────────────────────────────────────────────────
         CreateMap<HeroSection, HeroSectionDto>()
-            .ForMember(d => d.Title,    o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Title))
-            .ForMember(d => d.Subtitle, o => o.MapFrom(s => s.Translations.FirstOrDefault()!.Subtitle))
-            .ForMember(d => d.BadgeText,o => o.MapFrom(s => s.Translations.FirstOrDefault()!.BadgeText));
+            .ForMember(d => d.Title,    o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Title
+                    : string.Empty))
+            .ForMember(d => d.Subtitle, o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().Subtitle
+                    : null))
+            .ForMember(d => d.BadgeText,o => o.MapFrom(s =>
+                s.Translations.FirstOrDefault() != null
+                    ? s.Translations.First().BadgeText
+                    : null));
 
         CreateMap<CreateHeroSectionDto, HeroSection>()
             .ForMember(d => d.Translations, o => o.Ignore());
 
         CreateMap<CreateDiscountCodeDto, DiscountCode>();
-
         CreateMap<DiscountCode, DiscountCodeDto>();
-
     }
 }

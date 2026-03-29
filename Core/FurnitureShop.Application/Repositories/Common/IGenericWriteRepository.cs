@@ -8,5 +8,7 @@ public interface IGenericWriteRepository<T> : IGenericRepository<T> where T : cl
     void UpdateRange(IEnumerable<T> entities);
     void Delete(T entity);
     void DeleteRange(IEnumerable<T> entities);
+    // FIX: RemoveAsync əlavə edildi (DiscountCodeService istifadə edir)
+    Task RemoveAsync(T entity);
     Task<int> SaveChangesAsync();
 }

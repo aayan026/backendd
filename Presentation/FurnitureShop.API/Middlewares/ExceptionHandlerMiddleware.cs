@@ -9,7 +9,6 @@ namespace FurnitureShop.API.Middlewares;
 public class ExceptionHandlerMiddleware
 {
     private readonly RequestDelegate _next;
-    private readonly ILogger<ExceptionHandlerMiddleware> _logger;
     private readonly IWebHostEnvironment _env;
     private readonly IServiceScopeFactory _scopeFactory;
 
@@ -41,6 +40,11 @@ public class ExceptionHandlerMiddleware
             ["AddressId"] = "Ünvan",
             ["HexCode"] = "Hex kodu",
             ["Item"] = "Element",
+            ["Id"] = "Id",
+            ["Value"] = "Dəyər",
+            ["MinOrderAmount"] = "Minimum məbləğ",
+            ["MaxUses"] = "Maksimum istifadə",
+            ["ExpiresAt"] = "Bitmə tarixi",
         },
         ["ru"] = new()
         {
@@ -68,6 +72,11 @@ public class ExceptionHandlerMiddleware
             ["AddressId"] = "Адрес",
             ["HexCode"] = "Hex код",
             ["Item"] = "Элемент",
+            ["Id"] = "Id",
+            ["Value"] = "Значение",
+            ["MinOrderAmount"] = "Мин. сумма",
+            ["MaxUses"] = "Макс. использований",
+            ["ExpiresAt"] = "Срок действия",
         },
         ["en"] = new()
         {
@@ -95,17 +104,20 @@ public class ExceptionHandlerMiddleware
             ["AddressId"] = "Address",
             ["HexCode"] = "Hex code",
             ["Item"] = "Item",
+            ["Id"] = "Id",
+            ["Value"] = "Value",
+            ["MinOrderAmount"] = "Min amount",
+            ["MaxUses"] = "Max uses",
+            ["ExpiresAt"] = "Expiry date",
         }
     };
 
     public ExceptionHandlerMiddleware(
         RequestDelegate next,
-        ILogger<ExceptionHandlerMiddleware> logger,
         IWebHostEnvironment env,
         IServiceScopeFactory scopeFactory)
     {
         _next = next;
-        _logger = logger;
         _env = env;
         _scopeFactory = scopeFactory;
     }
@@ -118,11 +130,6 @@ public class ExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Xəta: {Type} | Path: {Path} | TraceId: {TraceId}",
-                ex.GetType().Name,
-                context.Request.Path,
-                context.TraceIdentifier);
-
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -146,10 +153,8 @@ public class ExceptionHandlerMiddleware
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(
                         g => LocalizeField(g.Key, lang),
-                        g => g.Select(e => LocalizeMessage(e.ErrorMessage, lang)).ToList()
-                    );
-                response = ApiResponse<object>.ValidationError(fvErrors,
-                    ValidationMessages.Get(lang, "ValidationError"));
+                        g => g.Select(e => LocalizeMessage(e.ErrorMessage, lang)).ToList());
+                response = ApiResponse<object>.ValidationError(fvErrors, ValidationMessages.Get(lang, "ValidationError"));
                 break;
 
             case Application.Exceptions.ValidationException validationEx:
@@ -161,20 +166,17 @@ public class ExceptionHandlerMiddleware
 
             case NotFoundException notFoundEx:
                 context.Response.StatusCode = 404;
-                response = ApiResponse<object>.NotFound(
-                    LocalizeMessage(notFoundEx.Message, lang));
+                response = ApiResponse<object>.NotFound(LocalizeMessage(notFoundEx.Message, lang));
                 break;
 
             case UnauthorizedException unauthorizedEx:
                 context.Response.StatusCode = 401;
-                response = ApiResponse<object>.Unauthorized(
-                    LocalizeMessage(unauthorizedEx.Message, lang));
+                response = ApiResponse<object>.Unauthorized(LocalizeMessage(unauthorizedEx.Message, lang));
                 break;
 
             case ForbiddenException forbiddenEx:
                 context.Response.StatusCode = 403;
-                response = ApiResponse<object>.Forbidden(
-                    LocalizeMessage(forbiddenEx.Message, lang));
+                response = ApiResponse<object>.Forbidden(LocalizeMessage(forbiddenEx.Message, lang));
                 break;
 
             default:
@@ -206,8 +208,7 @@ public class ExceptionHandlerMiddleware
         Dictionary<string, List<string>> errors, string lang)
         => errors.ToDictionary(
             kvp => LocalizeField(kvp.Key, lang),
-            kvp => kvp.Value.Select(m => LocalizeMessage(m, lang)).ToList()
-        );
+            kvp => kvp.Value.Select(m => LocalizeMessage(m, lang)).ToList());
 
     private static string LocalizeField(string field, string lang)
     {

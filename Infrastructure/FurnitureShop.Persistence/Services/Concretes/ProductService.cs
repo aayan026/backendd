@@ -22,23 +22,22 @@ public class ProductService : IProductService
     private readonly IMapper                   _mapper;
 
     private string Lang => _langService.GetCurrentLanguage();
-
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(10);
 
     public ProductService(
-        IProductReadRepository readRepo,
+        IProductReadRepository    readRepo,
         ICollectionReadRepository collectionReadRepo,
-        IProductWriteRepository writeRepo,
-        ILanguageService langService,
-        IMemoryCache cache,
-        IMapper  mapper)
+        IProductWriteRepository   writeRepo,
+        ILanguageService          langService,
+        IMemoryCache              cache,
+        IMapper                   mapper)
     {
-        _readRepo= readRepo;
+        _readRepo           = readRepo;
         _collectionReadRepo = collectionReadRepo;
-        _writeRepo= writeRepo;
-        _langService= langService;
-        _cache= cache;
-        _mapper= mapper;
+        _writeRepo          = writeRepo;
+        _langService        = langService;
+        _cache              = cache;
+        _mapper             = mapper;
     }
 
     public async Task<PagedList<ProductDto>> GetAllAsync(PaginationParams pagination)
@@ -88,7 +87,8 @@ public class ProductService : IProductService
         if (!_cache.TryGetValue(cacheKey, out ProductDto? cached))
         {
             var product = await _readRepo.GetDetailAsync(id, Lang);
-            if (product is null) throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+            if (product is null)
+                throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
             cached = _mapper.Map<ProductDto>(product);
             _cache.Set(cacheKey, cached, CacheExpiry);
         }
@@ -159,31 +159,68 @@ public class ProductService : IProductService
         await _writeRepo.SaveChangesAsync();
 
         _cache.Remove($"featured_products_{Lang}");
-
         return product.Id;
     }
 
     public async Task UpdateAsync(UpdateProductDto dto)
     {
-        var product = await _readRepo.GetDetailAsync(dto.Id, Lang);
-        if (product is null) throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+        // Bütün dillər ilə yüklə (lang=az yox, hamısını istəyirik)
+        var product = await _readRepo.GetDetailAsync(dto.Id, "az");
+        if (product is null)
+            throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-        _mapper.Map(dto, product);
+        // Əsas sahələr
+        product.Price               = dto.Price;
+        product.PriceExtra          = dto.PriceExtra;
+        product.Label               = dto.Label;
+        product.Material            = dto.Material;
+        product.IsFeatured          = dto.IsFeatured;
+        product.DisplayOrder        = dto.DisplayOrder;
+        product.Stock               = dto.Stock;
+        product.FurnitureCategoryId = dto.FurnitureCategoryId;
+
+        // FIX: translations tam yenilə
+        product.Translations.Clear();
+        foreach (var t in dto.Translations)
+            product.Translations.Add(new ProductTranslation
+            {
+                ProductId   = dto.Id,
+                Lang        = t.Lang,
+                Name        = t.Name,
+                Description = t.Description
+            });
+
+        // Images yenilə
+        product.Images.Clear();
+        foreach (var i in dto.ImageUrls)
+            product.Images.Add(new ProductImage { ProductId = dto.Id, ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary });
+
+        // Colors yenilə
+        product.Colors.Clear();
+        foreach (var c in dto.Colors)
+            product.Colors.Add(new ProductColor { ProductId = dto.Id, Name = c.Name, HexCode = c.HexCode });
+
         _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();
 
-        _cache.Remove($"product_{dto.Id}_{Lang}");
+        _cache.Remove($"product_{dto.Id}_az");
+        _cache.Remove($"product_{dto.Id}_ru");
+        _cache.Remove($"product_{dto.Id}_en");
         _cache.Remove($"featured_products_{Lang}");
     }
 
     public async Task DeleteAsync(int id)
     {
         var product = await _readRepo.GetByIdAsync(id);
-        if (product is null) throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+        if (product is null)
+            throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+
         _writeRepo.Delete(product);
         await _writeRepo.SaveChangesAsync();
 
-        _cache.Remove($"product_{id}_{Lang}");
+        _cache.Remove($"product_{id}_az");
+        _cache.Remove($"product_{id}_ru");
+        _cache.Remove($"product_{id}_en");
         _cache.Remove($"featured_products_{Lang}");
     }
 }

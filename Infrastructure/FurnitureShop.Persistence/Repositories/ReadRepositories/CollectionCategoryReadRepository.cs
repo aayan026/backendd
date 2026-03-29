@@ -15,12 +15,12 @@ public class CollectionCategoryReadRepository : GenericReadRepository<Collection
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .ToListAsync();
 
-
     public async Task<CollectionCategory?> GetWithCollectionsAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
-            .Include(x => x.Collections)
+            // FIX: update üçün bütün dillər yüklənir
+            .Include(x => x.Translations)
+            .Include(x => x.Collections.Where(c => !c.IsDeleted))
                 .ThenInclude(c => c.Translations.Where(t => t.Lang == lang))
             .FirstOrDefaultAsync();
 }

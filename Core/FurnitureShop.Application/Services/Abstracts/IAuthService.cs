@@ -1,12 +1,7 @@
 using FurnitureShop.Application.Dtos.Auth;
-using Microsoft.AspNetCore.Identity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FurnitureShop.Application.Services.Abstracts;
+
 public interface IAuthService
 {
     Task<TokenResponseDto> LoginAsync(LoginDto dto);
@@ -15,4 +10,9 @@ public interface IAuthService
     Task LogoutAsync(string userId);
     Task ForgotPasswordAsync(ForgotPasswordDto dto);
     Task ResetPasswordAsync(ResetPasswordDto dto);
+
+    /// <summary>
+    /// Google ID Token ilə daxil ol — user yoxdursa avtomatik register edir
+    /// </summary>
+    Task<TokenResponseDto> GoogleLoginAsync(GoogleLoginDto dto);
 }

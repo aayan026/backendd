@@ -3,13 +3,15 @@ using FurnitureShop.Application.Dtos.CollectionCategory;
 
 namespace FurnitureShop.Application.Validation.Concrete;
 
-public class CreateCollectionCategoryValidator : AbstractValidator<CreateCollectionCategoryDto>
+public class UpdateCollectionCategoryValidator : AbstractValidator<UpdateCollectionCategoryDto>
 {
     private static readonly string[] RequiredLangs = { "az", "ru", "en" };
 
-    public CreateCollectionCategoryValidator()
+    public UpdateCollectionCategoryValidator()
     {
-        // 3 dil məcburi
+        RuleFor(x => x.Id)
+            .GreaterThan(0).WithMessage("InvalidId|Id");
+
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))
