@@ -54,10 +54,11 @@ public class AuthService : IAuthService
     {
         var user = new AppUser
         {
-            UserName = dto.Email,
-            Email    = dto.Email,
-            Name     = dto.Name,
-            Surname  = dto.Surname
+            UserName    = dto.Email,
+            Email       = dto.Email,
+            Name        = dto.Name,
+            Surname     = dto.Surname,
+            PhoneNumber = dto.Phone
         };
 
         var result = await _userManager.CreateAsync(user, dto.Password);
@@ -77,8 +78,10 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponseDto> GoogleLoginAsync(GoogleLoginDto dto)
     {
-        var clientId = _config["Google:ClientId"]
-            ?? throw new InvalidOperationException("Google:ClientId konfiqurasiya edilməyib.");
+        var clientId = _config["Google:ClientId"];
+        if (string.IsNullOrWhiteSpace(clientId) || clientId.Contains("YOUR_GOOGLE"))
+            throw new UnauthorizedException(
+                ValidationMessages.Get(Lang, "GoogleNotConfigured"));
 
         GoogleJsonWebSignature.Payload payload;
         try

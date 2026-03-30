@@ -95,6 +95,20 @@ public class ProductService : IProductService
         return cached;
     }
 
+    public async Task<ProductDto?> GetByNameAsync(string name)
+    {
+        var cacheKey = $"product_name_{name}_{Lang}";
+        if (!_cache.TryGetValue(cacheKey, out ProductDto? cached))
+        {
+            var product = await _readRepo.GetByNameAsync(name, Lang);
+            if (product is null)
+                throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+            cached = _mapper.Map<ProductDto>(product);
+            _cache.Set(cacheKey, cached, CacheExpiry);
+        }
+        return cached;
+    }
+
     public async Task<PagedList<ProductDto>> GetPagedAsync(int categoryId, PaginationParams pagination)
     {
         var products = await _readRepo.GetByCategoryAsync(categoryId, Lang);

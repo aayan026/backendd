@@ -71,7 +71,33 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .ToListAsync();
 
     public Task<IEnumerable<Product>> GetInStockAsync(string lang)
+        => Task.FromResult<IEnumerable<Product>>(
+            Table
+                .Where(x => !x.IsDeleted && x.Stock > 0)
+                .Include(x => x.Translations.Where(t => t.Lang == lang))
+                .Include(x => x.Images.Where(i => i.IsPrimary))
+                .Include(x => x.Colors)
+                .OrderBy(x => x.DisplayOrder)
+                .AsEnumerable());
+
+    /// <summary>
+    /// Ada görə məhsul tap. Slug = ad boşluqları tire ilə əvəz edilmiş halda gəlir.
+    /// Məsələn: "velvet-lounge-sofa" → "velvet lounge sofa"
+    /// </summary>
+    public async Task<Product?> GetByNameAsync(string name, string lang)
     {
-        throw new NotImplementedException();
+        // slug "my-product-name" → "my product name" çevirir
+        var normalized = name.Replace("-", " ").ToLower();
+        return await Table
+            .Where(x => !x.IsDeleted &&
+                        x.Translations.Any(t =>
+                            t.Lang == lang &&
+                            t.Name.ToLower() == normalized))
+            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Images)
+            .Include(x => x.Colors)
+            .Include(x => x.FurnitureCategory)
+                .ThenInclude(c => c.Translations.Where(t => t.Lang == lang))
+            .FirstOrDefaultAsync();
     }
 }

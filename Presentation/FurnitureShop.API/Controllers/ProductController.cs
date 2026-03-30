@@ -68,9 +68,17 @@ public class ProductController : BaseApiController
         return Ok(ApiResponse<List<ProductDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
         => OkResponse(await _service.GetDetailAsync(id));
+
+    /// <summary>
+    /// Ada (slug) görə məhsul. Frontend /products/:slug route-u üçün.
+    /// Məsələn: GET /api/products/by-name/velvet-lounge-sofa
+    /// </summary>
+    [HttpGet("by-name/{slug}")]
+    public async Task<IActionResult> GetByName(string slug)
+        => OkResponse(await _service.GetByNameAsync(slug));
 
     [Authorize(Roles = "Admin")]
     [HttpPost]

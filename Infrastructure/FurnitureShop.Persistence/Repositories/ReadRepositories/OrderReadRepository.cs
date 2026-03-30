@@ -102,4 +102,53 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
 
     public Task<int> GetCountByStatusAsync(OrderStatus status)
         => Table.CountAsync(x => x.Status == status);
+
+    public async Task<IEnumerable<(int ProductId, string ProductName, string? ImageUrl, string? Category, decimal Price, int Stock, int SoldCount)>>
+        GetTopProductsAsync(int limit = 5)
+    {
+        var result = await Table
+            .Where(x => x.Status != OrderStatus.Cancelled)
+            .SelectMany(o => o.Items)
+            .Where(i => i.Product != null)
+            .GroupBy(i => i.ProductId)
+            .Select(g => new
+            {
+                ProductId   = g.Key,
+                SoldCount   = g.Sum(i => i.Quantity),
+                Product     = g.First().Product
+            })
+            .OrderByDescending(x => x.SoldCount)
+            .Take(limit)
+            .ToListAsync();
+
+        return result.Select(x => (
+            x.ProductId ?? 0,
+            x.Product!.Translations.FirstOrDefault()?.Name ?? $"Product #{x.ProductId}",
+            x.Product.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
+                ?? x.Product.Images.FirstOrDefault()?.ImageUrl,
+            x.Product.FurnitureCategory?.Translations.FirstOrDefault()?.Name,
+            x.Product.Price,
+            x.Product.Stock,
+            x.SoldCount
+        ));
+    }
+
+    public async Task<IEnumerable<(int Year, int Month, decimal Revenue, int OrderCount)>>
+        GetMonthlyRevenueAsync(int year)
+    {
+        var data = await Table
+            .Where(x => x.CreatedAt.Year == year && x.Status != OrderStatus.Cancelled)
+            .GroupBy(x => new { x.CreatedAt.Year, x.CreatedAt.Month })
+            .Select(g => new
+            {
+                g.Key.Year,
+                g.Key.Month,
+                Revenue    = g.Sum(x => x.TotalPrice),
+                OrderCount = g.Count()
+            })
+            .OrderBy(x => x.Month)
+            .ToListAsync();
+
+        return data.Select(x => (x.Year, x.Month, x.Revenue, x.OrderCount));
+    }
 }

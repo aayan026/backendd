@@ -70,6 +70,8 @@ public static class ValidationMessages
             ["InvalidFileType"]                = "Yalnız jpg, jpeg, png, webp formatları qəbul edilir",
             ["UserBanned"]                     = "İstifadəçi bloklandı",
             ["UserUnbanned"]                   = "İstifadəçinin bloku açıldı",
+            ["GoogleTokenInvalid"]             = "Google token etibarsızdır",
+            ["GoogleNotConfigured"]            = "Google OAuth konfiqurasiya edilməyib",
         },
         ["ru"] = new()
         {
@@ -137,6 +139,8 @@ public static class ValidationMessages
             ["InvalidFileType"]                = "Принимаются только форматы jpg, jpeg, png, webp",
             ["UserBanned"]                     = "Пользователь заблокирован",
             ["UserUnbanned"]                   = "Блокировка пользователя снята",
+            ["GoogleTokenInvalid"]             = "Токен Google недействителен",
+            ["GoogleNotConfigured"]            = "Google OAuth не настроен",
         },
         ["en"] = new()
         {
@@ -204,6 +208,8 @@ public static class ValidationMessages
             ["InvalidFileType"]                = "Only jpg, jpeg, png, webp formats are accepted",
             ["UserBanned"]                     = "User has been banned",
             ["UserUnbanned"]                   = "User ban has been lifted",
+            ["GoogleTokenInvalid"]             = "Google token is invalid",
+            ["GoogleNotConfigured"]            = "Google OAuth is not configured",
         }
     };
 

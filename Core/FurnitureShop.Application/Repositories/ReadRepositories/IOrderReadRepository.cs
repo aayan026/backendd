@@ -15,8 +15,16 @@ public interface IOrderReadRepository : IGenericReadRepository<Order>
     Task<(IEnumerable<Order> Items, int TotalCount)> GetByStatusPagedAsync(OrderStatus status, int page, int pageSize);
     Task<(IEnumerable<Order> Items, int TotalCount)> GetByDateRangePagedAsync(DateTime from, DateTime to, int page, int pageSize);
 
-    // Admin dashboard
-    Task<int> GetTotalCountAsync();
+    // Admin dashboard — stats
+    Task<int>     GetTotalCountAsync();
     Task<decimal> GetTotalRevenueAsync();
-    Task<int> GetCountByStatusAsync(OrderStatus status);
+    Task<int>     GetCountByStatusAsync(OrderStatus status);
+
+    // Admin dashboard — top products
+    Task<IEnumerable<(int ProductId, string ProductName, string? ImageUrl, string? Category, decimal Price, int Stock, int SoldCount)>>
+        GetTopProductsAsync(int limit = 5);
+
+    // Admin dashboard — monthly revenue
+    Task<IEnumerable<(int Year, int Month, decimal Revenue, int OrderCount)>>
+        GetMonthlyRevenueAsync(int year);
 }

@@ -50,6 +50,33 @@ public class AdminService : IAdminService
         };
     }
 
+    public async Task<IEnumerable<TopProductDto>> GetTopProductsAsync(int limit = 5)
+    {
+        var rows = await _orderReadRepo.GetTopProductsAsync(limit);
+        return rows.Select(r => new TopProductDto
+        {
+            Id        = r.ProductId,
+            Name      = r.ProductName,
+            ImageUrl  = r.ImageUrl,
+            Category  = r.Category,
+            Price     = r.Price,
+            Stock     = r.Stock,
+            SoldCount = r.SoldCount
+        });
+    }
+
+    public async Task<IEnumerable<MonthlyRevenueDto>> GetMonthlyRevenueAsync(int year)
+    {
+        var rows = await _orderReadRepo.GetMonthlyRevenueAsync(year);
+        return rows.Select(r => new MonthlyRevenueDto
+        {
+            Year    = r.Year,
+            Month   = r.Month,
+            Revenue = r.Revenue,
+            Orders  = r.OrderCount
+        });
+    }
+
     public async Task<PagedList<AdminUserDto>> GetUsersAsync(PaginationParams pagination)
     {
         var total = await _userManager.Users.CountAsync();

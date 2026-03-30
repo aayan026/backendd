@@ -20,6 +20,7 @@ public static class RegisterService
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileUploadService, LocalFileUploadService>();
         services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<CloudinaryService>();
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
