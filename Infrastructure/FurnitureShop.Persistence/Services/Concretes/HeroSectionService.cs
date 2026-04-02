@@ -20,8 +20,11 @@ public class HeroSectionService : IHeroSectionService
 
     private string lang => _langService.GetCurrentLanguage();
 
-
-    public HeroSectionService(IHeroSectionReadRepository readRepo, IHeroSectionWriteRepository writeRepo, ILanguageService langService, IMapper mapper)
+    public HeroSectionService(
+        IHeroSectionReadRepository readRepo,
+        IHeroSectionWriteRepository writeRepo,
+        ILanguageService langService,
+        IMapper mapper)
     {
         _readRepo = readRepo;
         _writeRepo = writeRepo;
@@ -38,16 +41,73 @@ public class HeroSectionService : IHeroSectionService
     public async Task<int> CreateAsync(CreateHeroSectionDto dto)
     {
         var hero = _mapper.Map<HeroSection>(dto);
-        hero.Translations = dto.Translations.Select(t => new HeroTranslation { Lang = t.Lang, Title = t.Title, Subtitle = t.Subtitle, BadgeText = t.BadgeText }).ToList();
+        hero.IsActive = true;
+        hero.Translations = dto.Translations.Select(t => new HeroTranslation
+        {
+            Lang = t.Lang,
+            Title = t.Title,
+            Subtitle = t.Subtitle,
+            BadgeText = t.BadgeText
+        }).ToList();
         await _writeRepo.AddAsync(hero);
         await _writeRepo.SaveChangesAsync();
         return hero.Id;
     }
 
+    public async Task UpdateAsync(int id, CreateHeroSectionDto dto)
+    {
+        var hero = await _readRepo.GetAll()
+            .Include(h => h.Translations)
+            .FirstOrDefaultAsync(h => h.Id == id);
+
+        if (hero is null)
+            throw new NotFoundException(ValidationMessages.Get(lang, "HeroNotFound"));
+
+        hero.ImageUrl = dto.ImageUrl ?? hero.ImageUrl;
+
+        // Mövcud tərcümələri yenilə
+        foreach (var t in dto.Translations)
+        {
+            var existing = hero.Translations.FirstOrDefault(x => x.Lang == t.Lang);
+            if (existing is not null)
+            {
+                existing.Title = t.Title;
+                existing.Subtitle = t.Subtitle;
+                existing.BadgeText = t.BadgeText;
+            }
+            else
+            {
+                hero.Translations.Add(new HeroTranslation
+                {
+                    Lang = t.Lang,
+                    Title = t.Title,
+                    Subtitle = t.Subtitle,
+                    BadgeText = t.BadgeText
+                });
+            }
+        }
+
+        _writeRepo.Update(hero);
+        await _writeRepo.SaveChangesAsync();
+    }
+
+    public async Task ToggleAsync(int id)
+    {
+        var hero = await _readRepo.GetByIdAsync(id);
+        if (hero is null)
+            throw new NotFoundException(ValidationMessages.Get(lang, "HeroNotFound"));
+
+        hero.IsActive = !hero.IsActive;
+        _writeRepo.Update(hero);
+        await _writeRepo.SaveChangesAsync();
+    }
+
     public async Task DeleteAsync(int id)
     {
         var hero = await _readRepo.GetByIdAsync(id);
-        if (hero is null) throw new NotFoundException(ValidationMessages.Get(lang, "HeroNotFound"));
+        if (hero is null)
+            throw new NotFoundException(ValidationMessages.Get(lang, "HeroNotFound"));
+
         _writeRepo.Delete(hero);
         await _writeRepo.SaveChangesAsync();
     }

@@ -13,54 +13,60 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class AdminService : IAdminService
 {
-    private readonly UserManager<AppUser>   _userManager;
-    private readonly IOrderReadRepository   _orderReadRepo;
-    private readonly ILanguageService       _langService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly IOrderReadRepository _orderReadRepo;
+    private readonly IProductReadRepository _productReadRepo;
+    private readonly ILanguageService _langService;
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public AdminService(
-        UserManager<AppUser>   userManager,
-        IOrderReadRepository   orderReadRepo,
-        ILanguageService       langService)
+        UserManager<AppUser> userManager,
+        IOrderReadRepository orderReadRepo,
+        IProductReadRepository productReadRepo,
+        ILanguageService langService)
     {
-        _userManager    = userManager;
-        _orderReadRepo  = orderReadRepo;
-        _langService    = langService;
+        _userManager = userManager;
+        _orderReadRepo = orderReadRepo;
+        _productReadRepo = productReadRepo;
+        _langService = langService;
     }
 
     public async Task<AdminDashboardDto> GetDashboardAsync()
     {
         var userCount = await _userManager.Users.CountAsync();
-        var revenue   = await _orderReadRepo.GetTotalRevenueAsync();
+        var revenue = await _orderReadRepo.GetTotalRevenueAsync();
 
         return new AdminDashboardDto
         {
-            Revenue   = revenue,
+            Revenue = revenue,
             UserCount = userCount,
-            Orders    = new OrderStatsDto
+            Orders = new OrderStatsDto
             {
-                Total      = await _orderReadRepo.GetTotalCountAsync(),
-                Pending    = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Pending),
-                Confirmed  = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Confirmed),
+                Total = await _orderReadRepo.GetTotalCountAsync(),
+                Pending = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Pending),
+                Confirmed = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Confirmed),
                 InProgress = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.InProgress),
-                Delivered  = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Delivered),
-                Cancelled  = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Cancelled)
+                Delivered = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Delivered),
+                Cancelled = await _orderReadRepo.GetCountByStatusAsync(OrderStatus.Cancelled)
             }
         };
     }
+
+    public async Task<int> GetTotalProductCountAsync()
+        => await _productReadRepo.GetAll().CountAsync();
 
     public async Task<IEnumerable<TopProductDto>> GetTopProductsAsync(int limit = 5)
     {
         var rows = await _orderReadRepo.GetTopProductsAsync(limit);
         return rows.Select(r => new TopProductDto
         {
-            Id        = r.ProductId,
-            Name      = r.ProductName,
-            ImageUrl  = r.ImageUrl,
-            Category  = r.Category,
-            Price     = r.Price,
-            Stock     = r.Stock,
+            Id = r.ProductId,
+            Name = r.ProductName,
+            ImageUrl = r.ImageUrl,
+            Category = r.Category,
+            Price = r.Price,
+            Stock = r.Stock,
             SoldCount = r.SoldCount
         });
     }
@@ -70,10 +76,10 @@ public class AdminService : IAdminService
         var rows = await _orderReadRepo.GetMonthlyRevenueAsync(year);
         return rows.Select(r => new MonthlyRevenueDto
         {
-            Year    = r.Year,
-            Month   = r.Month,
+            Year = r.Year,
+            Month = r.Month,
             Revenue = r.Revenue,
-            Orders  = r.OrderCount
+            Orders = r.OrderCount
         });
     }
 
@@ -89,23 +95,23 @@ public class AdminService : IAdminService
         var dtos = new List<AdminUserDto>();
         foreach (var user in users)
         {
-            var roles   = await _userManager.GetRolesAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
             var lockout = await _userManager.IsLockedOutAsync(user);
             dtos.Add(new AdminUserDto
             {
-                Id          = user.Id,
-                Name        = user.Name,
-                Surname     = user.Surname,
-                Email       = user.Email ?? "",
+                Id = user.Id,
+                Name = user.Name,
+                Surname = user.Surname,
+                Email = user.Email ?? "",
                 PhoneNumber = user.PhoneNumber,
-                IsLocked    = lockout,
-                Roles       = roles
+                IsLocked = lockout,
+                Roles = roles
             });
         }
 
         return new PagedList<AdminUserDto>
         {
-            Items      = dtos,
+            Items = dtos,
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -115,18 +121,18 @@ public class AdminService : IAdminService
         var user = await _userManager.FindByIdAsync(userId)
             ?? throw new NotFoundException(ValidationMessages.Get(Lang, "UserNotFound"));
 
-        var roles   = await _userManager.GetRolesAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
         var lockout = await _userManager.IsLockedOutAsync(user);
 
         return new AdminUserDto
         {
-            Id= user.Id,
-            Name= user.Name,
-            Surname= user.Surname,
-            Email= user.Email ?? "",
+            Id = user.Id,
+            Name = user.Name,
+            Surname = user.Surname,
+            Email = user.Email ?? "",
             PhoneNumber = user.PhoneNumber,
-            IsLocked= lockout,
-            Roles= roles
+            IsLocked = lockout,
+            Roles = roles
         };
     }
 
