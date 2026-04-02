@@ -26,13 +26,17 @@ public class UsersController : BaseApiController
         if (user is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "UserNotFound"));
 
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.Contains("Admin") ? "Admin" : roles.FirstOrDefault() ?? "Customer";
+
         return OkResponse(new UserMeDto
         {
-            Id          = user.Id,
-            Email       = user.Email ?? string.Empty,
-            Name        = user.Name,
-            Surname     = user.Surname,
-            PhoneNumber = user.PhoneNumber
+            Id = user.Id,
+            Email = user.Email ?? string.Empty,
+            Name = user.Name,
+            Surname = user.Surname,
+            PhoneNumber = user.PhoneNumber,
+            Role = role
         });
     }
 
@@ -43,19 +47,14 @@ public class UsersController : BaseApiController
         if (user is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "UserNotFound"));
 
-        user.Name        = dto.Name;
-        user.Surname     = dto.Surname;
+        user.Name = dto.Name;
+        user.Surname = dto.Surname;
         user.PhoneNumber = dto.PhoneNumber;
         await _userManager.UpdateAsync(user);
 
         return UpdatedResponse();
     }
 
-    /// <summary>
-    /// Şifrəni dəyişdir — cari şifrəni yoxlayır, yeni şifrəni qeyd edir
-    /// POST /api/users/me/change-password
-    /// Body: { currentPassword, newPassword }
-    /// </summary>
     [HttpPost("me/change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
