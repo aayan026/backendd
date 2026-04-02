@@ -55,7 +55,7 @@ builder.Services.AddControllers(options =>
 });
 
 // ── Static Files ──────────────────────────────────────────────────────────────
-builder.Services.AddDirectoryBrowser();
+// (Local file upload removed — images are stored on Cloudinary)
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
@@ -148,7 +148,6 @@ using (var scope = app.Services.CreateScope())
 // ── Middleware Pipeline ───────────────────────────────────────────────────────
 app.UseSwagger();
 app.UseSwaggerUI();
-app.UseStaticFiles();
 app.UseGlobalExceptionHandler();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();

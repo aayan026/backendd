@@ -18,9 +18,8 @@ public static class RegisterService
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<IFileUploadService, LocalFileUploadService>();
+        services.AddScoped<IFileUploadService, CloudinaryFileUploadService>();
         services.AddScoped<IPaymentService, PaymentService>();
-        services.AddScoped<CloudinaryService>();
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
