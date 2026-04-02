@@ -17,18 +17,11 @@ public class AdminController : BaseApiController
         _adminService = adminService;
     }
 
-    // ── Dashboard ──────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Tam dashboard məlumatı (köhnə frontend uyğunluğu üçün saxlanıldı)
-    /// GET /api/admin/dashboard
-    /// </summary>
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard()
         => OkResponse(await _adminService.GetDashboardAsync());
 
     /// <summary>
-    /// Dashboard statistikaları — frontend adminApi.getStats() üçün
     /// GET /api/admin/dashboard/stats
     /// Response: { totalProducts, totalOrders, todayOrders, totalRevenue, outOfStock, totalCustomers }
     /// </summary>
@@ -36,37 +29,30 @@ public class AdminController : BaseApiController
     public async Task<IActionResult> DashboardStats()
     {
         var data = await _adminService.GetDashboardAsync();
+        var totalProducts = await _adminService.GetTotalProductCountAsync();
+
         return OkResponse(new
         {
-            totalOrders    = data.Orders.Total,
-            todayOrders    = data.Orders.Pending,   // Pending ≈ bugünkü yeni sifarişlər
-            totalRevenue   = data.Revenue,
+            totalOrders = data.Orders.Total,
+            todayOrders = data.Orders.Pending,
+            totalRevenue = data.Revenue,
             totalCustomers = data.UserCount,
-            pendingOrders  = data.Orders.Pending,
-            confirmedOrders  = data.Orders.Confirmed,
+            totalProducts = totalProducts,
+            pendingOrders = data.Orders.Pending,
+            confirmedOrders = data.Orders.Confirmed,
             inProgressOrders = data.Orders.InProgress,
-            deliveredOrders  = data.Orders.Delivered,
-            cancelledOrders  = data.Orders.Cancelled
+            deliveredOrders = data.Orders.Delivered,
+            cancelledOrders = data.Orders.Cancelled
         });
     }
 
-    /// <summary>
-    /// Ən çox satılan məhsullar
-    /// GET /api/admin/dashboard/top-products?limit=5
-    /// </summary>
     [HttpGet("dashboard/top-products")]
     public async Task<IActionResult> TopProducts([FromQuery] int limit = 5)
         => OkResponse(await _adminService.GetTopProductsAsync(limit));
 
-    /// <summary>
-    /// Aylıq gəlir statistikası
-    /// GET /api/admin/dashboard/monthly-revenue?year=2025
-    /// </summary>
     [HttpGet("dashboard/monthly-revenue")]
     public async Task<IActionResult> MonthlyRevenue([FromQuery] int? year)
         => OkResponse(await _adminService.GetMonthlyRevenueAsync(year ?? DateTime.UtcNow.Year));
-
-    // ── Users ──────────────────────────────────────────────────────────────
 
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] PaginationParams pagination)

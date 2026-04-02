@@ -33,6 +33,22 @@ public class HeroSectionController : BaseApiController
     }
 
     [Authorize(Roles = "Admin")]
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(int id, [FromBody] CreateHeroSectionDto dto)
+    {
+        await _service.UpdateAsync(id, dto);
+        return UpdatedResponse();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("{id}/toggle")]
+    public async Task<IActionResult> Toggle(int id)
+    {
+        await _service.ToggleAsync(id);
+        return UpdatedResponse();
+    }
+
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {
