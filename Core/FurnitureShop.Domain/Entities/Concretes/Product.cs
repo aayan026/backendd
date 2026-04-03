@@ -14,7 +14,7 @@ public class Product:BaseEntity
     public int FurnitureCategoryId { get; set; }
 
     [JsonIgnore]
-    public FurnitureCategory FurnitureCategory { get; set; }
+    public FurnitureCategory? FurnitureCategory { get; set; }
     public string Material { get; set; }
     public ICollection<ProductColor> Colors { get; set; } = new List<ProductColor>();
     public bool IsDeleted { get; set; } = false;

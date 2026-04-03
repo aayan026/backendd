@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FurnitureShop.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260403040646_init3223")]
-    partial class init3223
+    [Migration("20260403161757_init79")]
+    partial class init79
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -279,6 +279,9 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("collectionCount")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("CollectionCategories");
@@ -404,6 +407,9 @@ namespace FurnitureShop.Persistence.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("producCount")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -1300,7 +1306,7 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.CollectionCategory", "CollectionCategory")
                         .WithMany("Collections")
                         .HasForeignKey("CollectionCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("CollectionCategory");
@@ -1372,7 +1378,7 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.FurnitureCategory", "FurnitureCategory")
                         .WithMany("Products")
                         .HasForeignKey("FurnitureCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("FurnitureCategory");

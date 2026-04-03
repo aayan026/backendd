@@ -16,7 +16,7 @@ public class CollectionConfiguration : IEntityTypeConfiguration<Collection>
         builder.HasOne(x => x.CollectionCategory)
             .WithMany(c => c.Collections)
             .HasForeignKey(x => x.CollectionCategoryId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(x => x.Products).WithMany();
 

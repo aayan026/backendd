@@ -1303,7 +1303,7 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.CollectionCategory", "CollectionCategory")
                         .WithMany("Collections")
                         .HasForeignKey("CollectionCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("CollectionCategory");
@@ -1375,7 +1375,7 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.FurnitureCategory", "FurnitureCategory")
                         .WithMany("Products")
                         .HasForeignKey("FurnitureCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("FurnitureCategory");
