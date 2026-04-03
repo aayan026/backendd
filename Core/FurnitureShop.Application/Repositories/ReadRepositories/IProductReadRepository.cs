@@ -18,4 +18,9 @@ public interface IProductReadRepository : IGenericReadRepository<Product>
     /// Ada görə məhsul tap — frontend slug (ad-based URL) ilə çağırır
     /// </summary>
     Task<Product?> GetByNameAsync(string name, string lang);
+
+    /// <summary>
+    /// Oxşar məhsullar: eyni kateqoriya + yaxın qiymət aralığı + (varsa) eyni material
+    /// </summary>
+    Task<IEnumerable<Product>> GetSimilarAsync(int productId, int categoryId, decimal price, string? material, string lang);
 }

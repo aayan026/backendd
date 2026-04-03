@@ -20,6 +20,11 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.Label)
             .HasMaxLength(50);
 
+        builder.Property(x => x.Width).HasColumnType("decimal(8,2)");
+        builder.Property(x => x.Height).HasColumnType("decimal(8,2)");
+        builder.Property(x => x.Depth).HasColumnType("decimal(8,2)");
+        builder.Property(x => x.Weight).HasColumnType("decimal(8,2)");
+
         builder.HasOne(x => x.FurnitureCategory)
             .WithMany(c => c.Products)
             .HasForeignKey(x => x.FurnitureCategoryId)

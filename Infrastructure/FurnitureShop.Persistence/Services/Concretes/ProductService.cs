@@ -153,6 +153,21 @@ public class ProductService : IProductService
         };
     }
 
+    public async Task<IEnumerable<ProductDto>> GetSimilarAsync(int productId)
+    {
+        var product = await _readRepo.GetDetailAsync(productId, Lang);
+        if (product is null) return Enumerable.Empty<ProductDto>();
+
+        var similar = await _readRepo.GetSimilarAsync(
+            productId,
+            product.FurnitureCategoryId,
+            product.Price,
+            product.Material,
+            Lang);
+
+        return _mapper.Map<IEnumerable<ProductDto>>(similar);
+    }
+
     public async Task<int> CreateAsync(CreateProductDto dto)
     {
         var product = _mapper.Map<Product>(dto);
@@ -192,6 +207,10 @@ public class ProductService : IProductService
         product.DisplayOrder        = dto.DisplayOrder;
         product.Stock               = dto.Stock;
         product.FurnitureCategoryId = dto.FurnitureCategoryId;
+        product.Width               = dto.Width;
+        product.Height              = dto.Height;
+        product.Depth               = dto.Depth;
+        product.Weight              = dto.Weight;
 
         // FIX: translations tam yenilə
         product.Translations.Clear();

@@ -6,4 +6,5 @@ public class HeroSectionDto
     public string? Subtitle { get; set; }
     public string? BadgeText { get; set; }
     public string? ImageUrl { get; set; }
+    public bool IsActive { get; set; }
 }
