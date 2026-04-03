@@ -83,9 +83,19 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task DeleteAsync(int id)
     {
-        var category = await _readRepo.GetByIdAsync(id);
+        // Kolleksiyalarla birlikdə yüklə
+        var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
+
+        // Bu kateqoriyaya aid kolleksiyaları soft-delete et
+        // (CollectionConfiguration-da OnDelete(Restrict) var)
+        if (category.Collections != null)
+        {
+            foreach (var col in category.Collections)
+                col.IsDeleted = true;
+        }
+
         _writeRepo.Delete(category);
         await _writeRepo.SaveChangesAsync();
     }
