@@ -80,9 +80,19 @@ public class FurnitureCategoryService : IFurnitureCategoryService
 
     public async Task DeleteAsync(int id)
     {
-        var category = await _readRepo.GetByIdAsync(id);
+        // Məhsullarla birlikdə yüklə
+        var category = await _readRepo.GetWithProductsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CategoryNotFound"));
+
+        // Bu kateqoriyaya aid bütün məhsulları soft-delete et
+        // (ProductConfiguration-da OnDelete(Restrict) var — birbaşa silmək olmur)
+        if (category.Products != null)
+        {
+            foreach (var product in category.Products)
+                product.IsDeleted = true;
+        }
+
         _writeRepo.Delete(category);
         await _writeRepo.SaveChangesAsync();
     }
