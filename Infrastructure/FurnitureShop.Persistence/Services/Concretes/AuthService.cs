@@ -190,8 +190,11 @@ public class AuthService : IAuthService
         if (user is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "UserNotFound"));
 
-        var decodedToken = Uri.UnescapeDataString(dto.Token);
-        var result = await _userManager.ResetPasswordAsync(user, decodedToken, dto.NewPassword);
+        // Token emaildəki linkdə EscapeDataString ilə encode edilib.
+        // Browser URL-i açanda avtomatik decode edir, frontend isə
+        // decoded token-i göndərir — buna görə burada əlavə Unescape lazım deyil.
+        // Əlavə UnescapeDataString "+" işarəsini boşluğa çevirərək tokeni pozurdu.
+        var result = await _userManager.ResetPasswordAsync(user, dto.Token, dto.NewPassword);
         if (!result.Succeeded)
         {
             var errors = result.Errors
