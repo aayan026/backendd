@@ -19,6 +19,9 @@ public interface IProductService
     Task<PagedList<ProductDto>>      GetByPriceRangeAsync(decimal min, decimal max, PaginationParams pagination);
     Task<PagedList<ProductDto>>      GetByColorAsync(string colorName, PaginationParams pagination);
 
+    /// <summary>Oxşar məhsullar: eyni kateqoriya + yaxın qiymət + material</summary>
+    Task<IEnumerable<ProductDto>>    GetSimilarAsync(int productId);
+
     Task<int>  CreateAsync(CreateProductDto dto);
     Task       UpdateAsync(UpdateProductDto dto);
     Task       DeleteAsync(int id);

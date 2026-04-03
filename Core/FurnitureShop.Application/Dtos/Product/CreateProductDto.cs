@@ -10,8 +10,13 @@ public class CreateProductDto
     public int DisplayOrder { get; set; }
     public int Stock { get; set; }
     public int FurnitureCategoryId { get; set; }
-    public List<CreateProductColorDto> Colors { get; set; } = new();
-    public List<ProductImageDto> ImageUrls { get; set; } = new(); 
+    public List<CreateProductColorDto> Colors    { get; set; } = new();
+    public List<ProductImageDto>       ImageUrls { get; set; } = new(); 
     public List<ProductTranslationDto> Translations { get; set; } = new();
+
+    public decimal? Width  { get; set; }
+    public decimal? Height { get; set; }
+    public decimal? Depth  { get; set; }
+    public decimal? Weight { get; set; }
 }
 

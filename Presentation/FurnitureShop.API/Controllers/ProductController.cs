@@ -73,6 +73,14 @@ public class ProductController : BaseApiController
         => OkResponse(await _service.GetDetailAsync(id));
 
     /// <summary>
+    /// Oxşar məhsullar: eyni kateqoriya + yaxın qiymət aralığı + material uyğunluğu
+    /// GET /api/products/{id}/similar
+    /// </summary>
+    [HttpGet("{id:int}/similar")]
+    public async Task<IActionResult> GetSimilar(int id)
+        => OkResponse(await _service.GetSimilarAsync(id));
+
+    /// <summary>
     /// Ada (slug) görə məhsul. Frontend /products/:slug route-u üçün.
     /// Məsələn: GET /api/products/by-name/velvet-lounge-sofa
     /// </summary>

@@ -5,6 +5,8 @@ using FurnitureShop.Domain.Entities.Identity;
 using FurnitureShop.Persistence.Datas;
 using FurnitureShop.Persistence.Repositories.ReadRepositories;
 using FurnitureShop.Persistence.Repositories.WriteRepositories;
+using FurnitureShop.Persistence.Repositories.ReadRepositories;
+using FurnitureShop.Persistence.Repositories.WriteRepositories;
 using FurnitureShop.Persistence.Services.Concretes;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +44,7 @@ public static class RegisterService
         services.AddScoped<ICampaignReadRepository,            CampaignReadRepository>();
         services.AddScoped<IHeroSectionReadRepository,         HeroSectionReadRepository>();
         services.AddScoped<IDiscountCodeReadRepository,        DiscountCodeReadRepository>();
+        services.AddScoped<IReviewReadRepository,              ReviewReadRepository>();
 
         // Write Repositories
         services.AddScoped<IProductWriteRepository,            ProductWriteRepository>();
@@ -55,6 +58,7 @@ public static class RegisterService
         services.AddScoped<ICampaignWriteRepository,           CampaignWriteRepository>();
         services.AddScoped<IHeroSectionWriteRepository,        HeroSectionWriteRepository>();
         services.AddScoped<IDiscountCodeWriteRepository,       DiscountCodeWriteRepository>();
+        services.AddScoped<IReviewWriteRepository,             ReviewWriteRepository>();
     }
 
     private static void AddServicesExtension(IServiceCollection services)
@@ -71,6 +75,7 @@ public static class RegisterService
         services.AddScoped<ICartService,              CartService>();
         services.AddScoped<IWishlistService,          WishlistService>();
         services.AddScoped<IAddressService,           AddressService>();
-        services.AddScoped<IAdminService,             AdminService>();
+        services.AddScoped<IAdminService,            AdminService>();
+        services.AddScoped<IReviewService,           ReviewService>();
     }
 }

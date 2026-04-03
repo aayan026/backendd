@@ -26,6 +26,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<ProductTranslation> ProductTranslations => Set<ProductTranslation>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<ProductColor> ProductColors => Set<ProductColor>();
+    public DbSet<Review> Reviews => Set<Review>();
 
     // Order
     public DbSet<Order> Orders => Set<Order>();
@@ -45,7 +46,6 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<CampaignTranslation> CampaignTranslations => Set<CampaignTranslation>();
     public DbSet<DiscountCode> DiscountCodes => Set<DiscountCode>();
-
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

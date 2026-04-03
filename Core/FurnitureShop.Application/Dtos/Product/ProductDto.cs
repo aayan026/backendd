@@ -14,6 +14,12 @@ public class ProductDto
     public int Stock { get; set; }
     public int FurnitureCategoryId { get; set; }
     public string? CategoryName { get; set; }
-    public List<ProductImageDto> Images { get; set; } = new();
-    public List<ProductColorDto> Colors { get; set; } = new();
+    public List<ProductImageDto>  Images    { get; set; } = new();
+    public List<ProductColorDto>  Colors    { get; set; } = new();
+
+    // Ölçülər
+    public decimal? Width  { get; set; }
+    public decimal? Height { get; set; }
+    public decimal? Depth  { get; set; }
+    public decimal? Weight { get; set; }
 }

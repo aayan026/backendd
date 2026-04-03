@@ -559,11 +559,17 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal?>("Depth")
+                        .HasColumnType("decimal(8,2)");
+
                     b.Property<int>("DisplayOrder")
                         .HasColumnType("int");
 
                     b.Property<int>("FurnitureCategoryId")
                         .HasColumnType("int");
+
+                    b.Property<decimal?>("Height")
+                        .HasColumnType("decimal(8,2)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -592,6 +598,12 @@ namespace FurnitureShop.Persistence.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("Weight")
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<decimal?>("Width")
+                        .HasColumnType("decimal(8,2)");
 
                     b.HasKey("Id");
 
@@ -667,6 +679,50 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductImages");
+                });
+
+            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AuthorEmail")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Reviews");
                 });
 
             modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.Translation.CampaignTranslation", b =>
@@ -1341,6 +1397,17 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.Review", b =>
+                {
+                    b.HasOne("FurnitureShop.Domain.Entities.Concretes.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.Translation.CampaignTranslation", b =>
                 {
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.Campaign", "Campaign")
@@ -1562,6 +1629,8 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Navigation("Colors");
 
                     b.Navigation("Images");
+
+                    b.Navigation("Reviews");
 
                     b.Navigation("Translations");
                 });

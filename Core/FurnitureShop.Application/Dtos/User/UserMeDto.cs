@@ -8,8 +8,4 @@ public class UserMeDto
     public string Surname { get; set; } = null!;
     public string? PhoneNumber { get; set; }
     public string? Role { get; set; }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> e9ecd0d (fix adminservice)

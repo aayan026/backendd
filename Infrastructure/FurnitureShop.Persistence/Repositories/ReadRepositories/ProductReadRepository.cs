@@ -100,4 +100,34 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
                 .ThenInclude(c => c.Translations.Where(t => t.Lang == lang))
             .FirstOrDefaultAsync();
     }
+
+    public async Task<IEnumerable<Product>> GetSimilarAsync(
+        int productId, int categoryId, decimal price, string? material, string lang)
+    {
+        var minPrice = price * 0.5m;
+        var maxPrice = price * 1.5m;
+
+        // Əvvəl eyni material + eyni kateqoriya + qiymət aralığı
+        var query = Table
+            .Where(x => !x.IsDeleted && x.Id != productId && x.FurnitureCategoryId == categoryId)
+            .Where(x => x.Price >= minPrice && x.Price <= maxPrice)
+            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Images.Where(i => i.IsPrimary))
+            .Include(x => x.Colors)
+            .OrderBy(x => x.DisplayOrder);
+
+        var results = await query.ToListAsync();
+
+        // Material varsa — eyni material önə çıxsın
+        if (!string.IsNullOrWhiteSpace(material))
+        {
+            results = results
+                .OrderByDescending(x => x.Material != null &&
+                    x.Material.ToLower().Contains(material.ToLower()))
+                .ThenBy(x => x.DisplayOrder)
+                .ToList();
+        }
+
+        return results.Take(4);
+    }
 }

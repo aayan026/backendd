@@ -25,6 +25,9 @@ public class Product:BaseEntity
     public string Label { get; set; }
     public decimal? PriceExtra { get; set; }
     public ICollection<ProductTranslation> Translations { get; set; }
-
-
+    public decimal? Width  { get; set; }
+    public decimal? Height { get; set; }
+    public decimal? Depth  { get; set; }
+    public decimal? Weight { get; set; }
+    public ICollection<Review> Reviews { get; set; } = new List<Review>();
 }
