@@ -15,41 +15,41 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class OrderService : IOrderService
 {
-    private readonly IOrderReadRepository  _readRepo;
+    private readonly IOrderReadRepository _readRepo;
     private readonly IOrderWriteRepository _writeRepo;
-    private readonly ICartWriteRepository  _cartWriteRepo;
-    private readonly ICartReadRepository   _cartReadRepo;
-    private readonly IDiscountCodeReadRepository  _discountReadRepo;
+    private readonly ICartWriteRepository _cartWriteRepo;
+    private readonly ICartReadRepository _cartReadRepo;
+    private readonly IDiscountCodeReadRepository _discountReadRepo;
     private readonly IDiscountCodeWriteRepository _discountWriteRepo;
-    private readonly ILanguageService      _langService;
-    private readonly IEmailService         _emailService;
-    private readonly UserManager<AppUser>  _userManager;
-    private readonly IMapper               _mapper;
+    private readonly ILanguageService _langService;
+    private readonly IEmailService _emailService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly IMapper _mapper;
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public OrderService(
-        IOrderReadRepository  readRepo,
+        IOrderReadRepository readRepo,
         IOrderWriteRepository writeRepo,
-        ICartWriteRepository  cartWriteRepo,
-        ICartReadRepository   cartReadRepo,
-        IDiscountCodeReadRepository  discountReadRepo,
+        ICartWriteRepository cartWriteRepo,
+        ICartReadRepository cartReadRepo,
+        IDiscountCodeReadRepository discountReadRepo,
         IDiscountCodeWriteRepository discountWriteRepo,
-        ILanguageService      langService,
-        IEmailService         emailService,
-        UserManager<AppUser>  userManager,
-        IMapper               mapper)
+        ILanguageService langService,
+        IEmailService emailService,
+        UserManager<AppUser> userManager,
+        IMapper mapper)
     {
-        _readRepo          = readRepo;
-        _writeRepo         = writeRepo;
-        _cartWriteRepo     = cartWriteRepo;
-        _cartReadRepo      = cartReadRepo;
-        _discountReadRepo  = discountReadRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
+        _cartWriteRepo = cartWriteRepo;
+        _cartReadRepo = cartReadRepo;
+        _discountReadRepo = discountReadRepo;
         _discountWriteRepo = discountWriteRepo;
-        _langService       = langService;
-        _emailService      = emailService;
-        _userManager       = userManager;
-        _mapper            = mapper;
+        _langService = langService;
+        _emailService = emailService;
+        _userManager = userManager;
+        _mapper = mapper;
     }
 
     // ── Müştəri ────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ public class OrderService : IOrderService
             await _cartWriteRepo.SaveChangesAsync();
         }
 
-        // Order confirmation email göndər
+        // Order confirmation email → müştəriyə
         var user = await _userManager.FindByIdAsync(userId);
         if (user is not null)
         {
@@ -114,6 +114,25 @@ public class OrderService : IOrderService
                 user.Email!, $"{user.Name} {user.Surname}",
                 order.Id, order.TotalPrice, Lang);
         }
+
+        // Yeni sifariş bildirişi → adminə
+        var payMethodLabel = order.PaymentMethod switch
+        {
+            PaymentMethod.CashOnDelivery => "Nağd",
+            PaymentMethod.Card => "Kart",
+            PaymentMethod.BankTransfer => "Bank köçürməsi",
+            _ => order.PaymentMethod.ToString()
+        };
+        var deliveryAddr = order.Note ?? "—";
+
+        _ = _emailService.SendAdminOrderNotificationAsync(
+            order.Id,
+            user is not null ? $"{user.Name} {user.Surname}" : "—",
+            user?.Email ?? "—",
+            order.TotalPrice,
+            payMethodLabel,
+            deliveryAddr,
+            Lang);
 
         return order.Id;
     }
@@ -156,7 +175,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetAllPagedAsync(pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -166,7 +185,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetByStatusPagedAsync(status, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -176,7 +195,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetByDateRangePagedAsync(from, to, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }

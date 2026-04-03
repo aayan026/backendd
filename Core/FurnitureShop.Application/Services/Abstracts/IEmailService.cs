@@ -8,4 +8,5 @@ public interface IEmailService
     Task SendForgotPasswordAsync(string toEmail, string toName, string resetToken, string lang);
     Task SendOrderConfirmationAsync(string toEmail, string toName, int orderId, decimal total, string lang);
     Task SendOrderStatusChangedAsync(string toEmail, string toName, int orderId, string status, string lang);
+    Task SendAdminOrderNotificationAsync(int orderId, string customerName, string customerEmail, decimal total, string paymentMethod, string deliveryAddress, string lang);
 }
