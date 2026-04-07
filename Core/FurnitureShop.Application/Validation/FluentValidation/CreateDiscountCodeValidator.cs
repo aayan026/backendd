@@ -15,7 +15,7 @@ public class CreateDiscountCodeValidator : AbstractValidator<CreateDiscountCodeD
             .Matches(@"^[A-Z0-9_\-]+$").WithMessage("Kod yalnız böyük hərf, rəqəm, _ və - ehtiva edə bilər");
 
         RuleFor(x => x.Type)
-            .IsInEnum().WithMessage("Endirim tipi yanlışdır (Percent=0, Fixed=1)");
+            .IsInEnum().WithMessage("Endirim tipi yanlışdır (Percent=1, Fixed=2)");
 
         RuleFor(x => x.Value)
             .GreaterThan(0).WithMessage("GreaterThanZero|Value");

@@ -12,7 +12,7 @@ public class Collection:BaseEntity
 {
     public ICollection<CollectionTranslation> Translations { get; set; }
 
-    public string ImagesUrl { get; set; }   
+    public string? ImagesUrl { get; set; }
     public CollectionCategory? CollectionCategory { get; set; }
     public int CollectionCategoryId { get; set; }
     public decimal TotalPrice { get; set; }

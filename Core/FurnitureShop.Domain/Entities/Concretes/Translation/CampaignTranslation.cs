@@ -1,4 +1,4 @@
-﻿using FurnitureShop.Domain.Entities.Common;
+using FurnitureShop.Domain.Entities.Common;
 
 namespace FurnitureShop.Domain.Entities.Concretes.Translation
 {
@@ -7,11 +7,11 @@ namespace FurnitureShop.Domain.Entities.Concretes.Translation
         public int Id { get; set; }
 
         public int CampaignId { get; set; }      
-        public string Lang { get; set; }        // "az", "en", "ru"
-        public string Title { get; set; }
-        public string Description { get; set; }
+        public string? Lang { get; set; }        // "az", "en", "ru"
+        public string? Title { get; set; }
+        public string? Description { get; set; }
 
-        public string ButtonText { get; set; }
+        public string? ButtonText { get; set; }
         public Campaign Campaign { get; set; }   
 
 

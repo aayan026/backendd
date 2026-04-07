@@ -15,14 +15,14 @@ public class Product:BaseEntity
 
     [JsonIgnore]
     public FurnitureCategory? FurnitureCategory { get; set; }
-    public string Material { get; set; }
+    public string? Material { get; set; }
     public ICollection<ProductColor> Colors { get; set; } = new List<ProductColor>();
     public bool IsDeleted { get; set; } = false;
     public int Stock { get; set; }
     public bool IsFeatured { get; set; }
     public int DisplayOrder { get; set; }
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
-    public string Label { get; set; }
+    public string? Label { get; set; }
     public decimal? PriceExtra { get; set; }
     public ICollection<ProductTranslation> Translations { get; set; }
     public decimal? Width  { get; set; }

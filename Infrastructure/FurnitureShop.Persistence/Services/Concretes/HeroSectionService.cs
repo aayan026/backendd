@@ -36,7 +36,10 @@ public class HeroSectionService : IHeroSectionService
         => _mapper.Map<IEnumerable<HeroSectionDto>>(await _readRepo.GetActiveAsync(lang));
 
     public async Task<IEnumerable<HeroSectionDto>> GetAllAsync()
-        => _mapper.Map<IEnumerable<HeroSectionDto>>(await _readRepo.GetAll().ToListAsync());
+        => _mapper.Map<IEnumerable<HeroSectionDto>>(
+            await _readRepo.GetAll()
+                .Include(h => h.Translations)
+                .ToListAsync());
 
     public async Task<int> CreateAsync(CreateHeroSectionDto dto)
     {

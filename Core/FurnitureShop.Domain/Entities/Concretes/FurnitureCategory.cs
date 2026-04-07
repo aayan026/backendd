@@ -15,7 +15,7 @@ public class FurnitureCategory:BaseEntity
     public ICollection<Product> Products { get; set; }
     public int producCount { get; set; }
 
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
 
 
 }

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace FurnitureShop.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class init78 : Migration
+    public partial class init37 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -60,8 +60,8 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    ButtonLink = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ButtonLink = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
                     DiscountPercent = table.Column<decimal>(type: "decimal(5,2)", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -81,7 +81,7 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     collectionCount = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -121,7 +121,7 @@ namespace FurnitureShop.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     producCount = table.Column<int>(type: "int", nullable: false),
-                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
@@ -136,7 +136,7 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -352,10 +352,10 @@ namespace FurnitureShop.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CampaignId = table.Column<int>(type: "int", nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ButtonText = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ButtonText = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -375,8 +375,8 @@ namespace FurnitureShop.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CollectionCategoryId = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -395,7 +395,7 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    ImagesUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ImagesUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     CollectionCategoryId = table.Column<int>(type: "int", nullable: false),
                     TotalPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     DiscountPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
@@ -412,7 +412,7 @@ namespace FurnitureShop.Persistence.Migrations
                         column: x => x.CollectionCategoryId,
                         principalTable: "CollectionCategories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -421,9 +421,9 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     FurnitureCategoryId = table.Column<int>(type: "int", nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false)
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -444,12 +444,12 @@ namespace FurnitureShop.Persistence.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     FurnitureCategoryId = table.Column<int>(type: "int", nullable: false),
-                    Material = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Material = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     Stock = table.Column<int>(type: "int", nullable: false),
                     IsFeatured = table.Column<bool>(type: "bit", nullable: false),
                     DisplayOrder = table.Column<int>(type: "int", nullable: false),
-                    Label = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Label = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     PriceExtra = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     Width = table.Column<decimal>(type: "decimal(8,2)", nullable: true),
                     Height = table.Column<decimal>(type: "decimal(8,2)", nullable: true),
@@ -466,7 +466,7 @@ namespace FurnitureShop.Persistence.Migrations
                         column: x => x.FurnitureCategoryId,
                         principalTable: "FurnitureCategories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -475,10 +475,10 @@ namespace FurnitureShop.Persistence.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Subtitle = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                    BadgeText = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Subtitle = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: true),
+                    BadgeText = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true),
                     HeroId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -542,9 +542,9 @@ namespace FurnitureShop.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     CollectionId = table.Column<int>(type: "int", nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -673,9 +673,9 @@ namespace FurnitureShop.Persistence.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ProductId = table.Column<int>(type: "int", nullable: false),
-                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -867,7 +867,8 @@ namespace FurnitureShop.Persistence.Migrations
                 name: "IX_CampaignTranslations_CampaignId_Lang",
                 table: "CampaignTranslations",
                 columns: new[] { "CampaignId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CartItems_CartId",
@@ -894,7 +895,8 @@ namespace FurnitureShop.Persistence.Migrations
                 name: "IX_CollectionCategoryTranslations_CollectionCategoryId_Lang",
                 table: "CollectionCategoryTranslations",
                 columns: new[] { "CollectionCategoryId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CollectionProduct_ProductsId",
@@ -910,7 +912,8 @@ namespace FurnitureShop.Persistence.Migrations
                 name: "IX_CollectionTranslations_CollectionId_Lang",
                 table: "CollectionTranslations",
                 columns: new[] { "CollectionId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryInfos_OrderId",
@@ -928,13 +931,15 @@ namespace FurnitureShop.Persistence.Migrations
                 name: "IX_FurnitureCategoryTranslations_FurnitureCategoryId_Lang",
                 table: "FurnitureCategoryTranslations",
                 columns: new[] { "FurnitureCategoryId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_HeroTranslations_HeroId_Lang",
                 table: "HeroTranslations",
                 columns: new[] { "HeroId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OrderItems_CollectionId",
@@ -985,7 +990,8 @@ namespace FurnitureShop.Persistence.Migrations
                 name: "IX_ProductTranslations_ProductId_Lang",
                 table: "ProductTranslations",
                 columns: new[] { "ProductId", "Lang" },
-                unique: true);
+                unique: true,
+                filter: "[Lang] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_UserId",

@@ -107,7 +107,6 @@ namespace FurnitureShop.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ButtonLink")
-                        .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
@@ -124,7 +123,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -234,7 +232,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("ImagesUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -266,7 +263,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -399,7 +395,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -425,7 +420,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -584,12 +578,10 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Label")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Material")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -740,7 +732,6 @@ namespace FurnitureShop.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ButtonText")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -748,23 +739,21 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CampaignId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("CampaignTranslations");
                 });
@@ -781,19 +770,18 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CollectionCategoryId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("CollectionCategoryTranslations");
                 });
@@ -810,23 +798,21 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CollectionId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("CollectionTranslations");
                 });
@@ -843,19 +829,18 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("FurnitureCategoryId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("FurnitureCategoryTranslations");
                 });
@@ -869,7 +854,6 @@ namespace FurnitureShop.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("BadgeText")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -877,24 +861,22 @@ namespace FurnitureShop.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Subtitle")
-                        .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("Title")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("HeroId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("HeroTranslations");
                 });
@@ -908,16 +890,13 @@ namespace FurnitureShop.Persistence.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Lang")
-                        .IsRequired()
                         .HasMaxLength(5)
                         .HasColumnType("nvarchar(5)");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
@@ -927,7 +906,8 @@ namespace FurnitureShop.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId", "Lang")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[Lang] IS NOT NULL");
 
                     b.ToTable("ProductTranslations");
                 });

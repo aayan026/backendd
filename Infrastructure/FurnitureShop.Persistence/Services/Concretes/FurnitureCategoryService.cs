@@ -77,19 +77,13 @@ public class FurnitureCategoryService : IFurnitureCategoryService
 
     public async Task DeleteAsync(int id)
     {
-<<<<<<< HEAD
         // Məhsullarla birlikdə yüklə
-=======
->>>>>>> 12adcb1 (git commit)
         var category = await _readRepo.GetWithProductsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CategoryNotFound"));
 
-<<<<<<< HEAD
         // Bu kateqoriyaya aid bütün məhsulları soft-delete et
         // (ProductConfiguration-da OnDelete(Restrict) var — birbaşa silmək olmur)
-=======
->>>>>>> 12adcb1 (git commit)
         if (category.Products != null)
         {
             foreach (var product in category.Products)

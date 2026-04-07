@@ -11,6 +11,6 @@ namespace FurnitureShop.Domain.Entities.Concretes;
 public class HeroSection:BaseEntity
 {
     public ICollection<HeroTranslation> Translations { get; set; }
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
 }

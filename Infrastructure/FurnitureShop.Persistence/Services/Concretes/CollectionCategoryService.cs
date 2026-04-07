@@ -47,7 +47,7 @@ public class CollectionCategoryService : ICollectionCategoryService
     {
         var category = new CollectionCategory
         {
-            ImageUrl = dto.ImageUrl ?? string.Empty,
+            ImageUrl = dto.ImageUrl ?? null,
             Translations = dto.Translations
                 .Select(t => new CollectionCategoryTranslation { Lang = t.Lang, Name = t.Name })
                 .ToList()
