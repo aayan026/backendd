@@ -7,31 +7,36 @@ using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
+using FurnitureShop.Persistence.Datas;
+using Microsoft.EntityFrameworkCore;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class CollectionService : ICollectionService
 {
-    private readonly ICollectionReadRepository  _readRepo;
+    private readonly ICollectionReadRepository _readRepo;
     private readonly ICollectionWriteRepository _writeRepo;
-    private readonly IProductReadRepository     _productReadRepo;
-    private readonly ILanguageService           _langService;
-    private readonly IMapper                    _mapper;
+    private readonly IProductReadRepository _productReadRepo;
+    private readonly ILanguageService _langService;
+    private readonly IMapper _mapper;
+    private readonly AppDbContext _db;
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public CollectionService(
-        ICollectionReadRepository  readRepo,
+        ICollectionReadRepository readRepo,
         ICollectionWriteRepository writeRepo,
-        IProductReadRepository     productReadRepo,
-        ILanguageService           langService,
-        IMapper                    mapper)
+        IProductReadRepository productReadRepo,
+        ILanguageService langService,
+        IMapper mapper,
+        AppDbContext db)
     {
-        _readRepo        = readRepo;
-        _writeRepo       = writeRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
         _productReadRepo = productReadRepo;
-        _langService     = langService;
-        _mapper          = mapper;
+        _langService = langService;
+        _mapper = mapper;
+        _db = db;
     }
 
     public async Task<IEnumerable<CollectionDto>> GetAllAsync()
@@ -56,8 +61,8 @@ public class CollectionService : ICollectionService
         collection.Translations = dto.Translations
             .Select(t => new CollectionTranslation
             {
-                Lang        = t.Lang,
-                Name        = t.Name,
+                Lang = t.Lang,
+                Name = t.Name,
                 Description = t.Description
             }).ToList();
 
@@ -85,33 +90,24 @@ public class CollectionService : ICollectionService
         if (collection is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
 
-        collection.ImagesUrl            = dto.ImageUrl;
-        collection.TotalPrice           = dto.TotalPrice;
-        collection.DiscountPrice        = dto.DiscountPrice;
-        collection.DisplayOrder         = dto.DisplayOrder;
+        collection.ImagesUrl = dto.ImageUrl;
+        collection.TotalPrice = dto.TotalPrice;
+        collection.DiscountPrice = dto.DiscountPrice;
+        collection.DisplayOrder = dto.DisplayOrder;
         collection.CollectionCategoryId = dto.CollectionCategoryId;
 
-        // FIX: Clear()+Add() unique index conflict (CollectionId+Lang) verir.
-        // Mövcud entries-ləri update et, yenilərini əlavə et.
-        foreach (var t in dto.Translations)
-        {
-            var existing = collection.Translations.FirstOrDefault(x => x.Lang == t.Lang);
-            if (existing != null)
+        // FIX: köhnə translations-ları birbaşa DB-dən sil, yenilərini əlavə et
+        await _db.CollectionTranslations
+            .Where(t => t.CollectionId == dto.Id)
+            .ExecuteDeleteAsync();
+        await _db.CollectionTranslations.AddRangeAsync(
+            dto.Translations.Select(t => new CollectionTranslation
             {
-                existing.Name        = t.Name;
-                existing.Description = t.Description;
-            }
-            else
-            {
-                collection.Translations.Add(new CollectionTranslation
-                {
-                    Lang         = t.Lang,
-                    Name         = t.Name,
-                    Description  = t.Description,
-                    CollectionId = dto.Id
-                });
-            }
-        }
+                CollectionId = dto.Id,
+                Lang = t.Lang,
+                Name = t.Name,
+                Description = t.Description
+            }));
 
         // Məhsulları güncəllə
         collection.Products.Clear();

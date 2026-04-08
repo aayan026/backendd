@@ -12,7 +12,4 @@ public class CollectionDto
     public int CollectionCategoryId { get; set; }
     public string? CategoryName { get; set; }
     public List<ProductDto> Products { get; set; } = new();
-
-    // Bütün dillər — admin edit formu üçün lazımdır
-    public List<CollectionTranslationDto> Translations { get; set; } = new();
 }

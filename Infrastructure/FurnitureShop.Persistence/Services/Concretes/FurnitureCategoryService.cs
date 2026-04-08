@@ -7,6 +7,8 @@ using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
+using FurnitureShop.Persistence.Datas;
+using Microsoft.EntityFrameworkCore;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
@@ -16,6 +18,7 @@ public class FurnitureCategoryService : IFurnitureCategoryService
     private readonly IFurnitureCategoryWriteRepository _writeRepo;
     private readonly ILanguageService _langService;
     private readonly IMapper _mapper;
+    private readonly AppDbContext _db;
 
     private string Lang => _langService.GetCurrentLanguage();
 
@@ -23,12 +26,14 @@ public class FurnitureCategoryService : IFurnitureCategoryService
         IFurnitureCategoryReadRepository readRepo,
         IFurnitureCategoryWriteRepository writeRepo,
         ILanguageService langService,
-        IMapper mapper)
+        IMapper mapper,
+        AppDbContext db)
     {
         _readRepo = readRepo;
         _writeRepo = writeRepo;
         _langService = langService;
         _mapper = mapper;
+        _db = db;
     }
 
     public async Task<IEnumerable<FurnitureCategoryDto>> GetAllAsync()
@@ -62,25 +67,17 @@ public class FurnitureCategoryService : IFurnitureCategoryService
 
         category.ImageUrl = dto.ImageUrl;
 
-        // FIX: Clear()+Add() unique index conflict (FurnitureCategoryId+Lang) verir.
-        // Mövcud entries-ləri update et, yenilərini əlavə et.
-        foreach (var t in dto.Translations)
-        {
-            var existing = category.Translations.FirstOrDefault(x => x.Lang == t.Lang);
-            if (existing != null)
+        // FIX: birbaşa DB-dən sil, yenisini əlavə et
+        await _db.FurnitureCategoryTranslations
+            .Where(t => t.FurnitureCategoryId == dto.Id)
+            .ExecuteDeleteAsync();
+        await _db.FurnitureCategoryTranslations.AddRangeAsync(
+            dto.Translations.Select(t => new FurnitureCategoryTranslation
             {
-                existing.Name = t.Name;
-            }
-            else
-            {
-                category.Translations.Add(new FurnitureCategoryTranslation
-                {
-                    Lang = t.Lang,
-                    Name = t.Name,
-                    FurnitureCategoryId = dto.Id
-                });
-            }
-        }
+                FurnitureCategoryId = dto.Id,
+                Lang = t.Lang,
+                Name = t.Name
+            }));
 
         _writeRepo.Update(category);
         await _writeRepo.SaveChangesAsync();

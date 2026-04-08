@@ -17,9 +17,6 @@ public class ProductDto
     public List<ProductImageDto>  Images    { get; set; } = new();
     public List<ProductColorDto>  Colors    { get; set; } = new();
 
-    // Bütün dillər — admin edit formu üçün lazımdır
-    public List<ProductTranslationDto> Translations { get; set; } = new();
-
     // Ölçülər
     public decimal? Width  { get; set; }
     public decimal? Height { get; set; }

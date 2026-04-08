@@ -23,10 +23,4 @@ public interface IProductReadRepository : IGenericReadRepository<Product>
     /// Oxşar məhsullar: eyni kateqoriya + yaxın qiymət aralığı + (varsa) eyni material
     /// </summary>
     Task<IEnumerable<Product>> GetSimilarAsync(int productId, int categoryId, decimal price, string? material, string lang);
-
-    /// <summary>
-    /// Update üçün məhsulu BÜTÜn dillər ilə yüklə (lang filter olmadan).
-    /// GetDetailAsync yalnız 1 dil yükləyir — .Clear() zamanı EF unique index conflict verir.
-    /// </summary>
-    Task<Product?> GetForUpdateAsync(int id);
 }

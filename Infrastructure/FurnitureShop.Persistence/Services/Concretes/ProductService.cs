@@ -8,45 +8,50 @@ using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
+using FurnitureShop.Persistence.Datas;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class ProductService : IProductService
 {
-    private readonly IProductReadRepository    _readRepo;
+    private readonly IProductReadRepository _readRepo;
     private readonly ICollectionReadRepository _collectionReadRepo;
-    private readonly IProductWriteRepository   _writeRepo;
-    private readonly ILanguageService          _langService;
-    private readonly IMemoryCache              _cache;
-    private readonly IMapper                   _mapper;
+    private readonly IProductWriteRepository _writeRepo;
+    private readonly ILanguageService _langService;
+    private readonly IMemoryCache _cache;
+    private readonly IMapper _mapper;
+    private readonly AppDbContext _db;
 
     private string Lang => _langService.GetCurrentLanguage();
     private static readonly TimeSpan CacheExpiry = TimeSpan.FromMinutes(10);
 
     public ProductService(
-        IProductReadRepository    readRepo,
+        IProductReadRepository readRepo,
         ICollectionReadRepository collectionReadRepo,
-        IProductWriteRepository   writeRepo,
-        ILanguageService          langService,
-        IMemoryCache              cache,
-        IMapper                   mapper)
+        IProductWriteRepository writeRepo,
+        ILanguageService langService,
+        IMemoryCache cache,
+        IMapper mapper,
+        AppDbContext db)
     {
-        _readRepo           = readRepo;
+        _readRepo = readRepo;
         _collectionReadRepo = collectionReadRepo;
-        _writeRepo          = writeRepo;
-        _langService        = langService;
-        _cache              = cache;
-        _mapper             = mapper;
+        _writeRepo = writeRepo;
+        _langService = langService;
+        _cache = cache;
+        _mapper = mapper;
+        _db = db;
     }
 
     public async Task<PagedList<ProductDto>> GetAllAsync(PaginationParams pagination)
     {
         var products = await _readRepo.GetAllAsync(Lang);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -61,10 +66,10 @@ public class ProductService : IProductService
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
 
         var products = collection.Products.Where(x => !x.IsDeleted);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -112,10 +117,10 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> GetPagedAsync(int categoryId, PaginationParams pagination)
     {
         var products = await _readRepo.GetByCategoryAsync(categoryId, Lang);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -123,10 +128,10 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> SearchAsync(string keyword, PaginationParams pagination)
     {
         var products = await _readRepo.SearchAsync(keyword, Lang);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -134,10 +139,10 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> GetByPriceRangeAsync(decimal min, decimal max, PaginationParams pagination)
     {
         var products = await _readRepo.GetByPriceRangeAsync(min, max, Lang);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -145,10 +150,10 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> GetByColorAsync(string colorName, PaginationParams pagination)
     {
         var products = await _readRepo.GetByColorAsync(colorName, Lang);
-        var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
-            Items      = _mapper.Map<List<ProductDto>>(paged.Items),
+            Items = _mapper.Map<List<ProductDto>>(paged.Items),
             Pagination = paged.Pagination
         };
     }
@@ -193,57 +198,60 @@ public class ProductService : IProductService
 
     public async Task UpdateAsync(UpdateProductDto dto)
     {
-        // FIX: Bütün dillər ilə yüklə — GetDetailAsync yalnız 1 dil yükləyir,
-        // bu isə .Clear() + yeni translations əlavə edəndə EF unique index conflict verir.
-        var product = await _readRepo.GetForUpdateAsync(dto.Id);
+        var product = await _readRepo.GetDetailAsync(dto.Id, "az");
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
         // Əsas sahələr
-        product.Price               = dto.Price;
-        product.PriceExtra          = dto.PriceExtra;
-        product.Label               = dto.Label;
-        product.Material            = dto.Material;
-        product.IsFeatured          = dto.IsFeatured;
-        product.DisplayOrder        = dto.DisplayOrder;
-        product.Stock               = dto.Stock;
+        product.Price = dto.Price;
+        product.PriceExtra = dto.PriceExtra;
+        product.Label = dto.Label;
+        product.Material = dto.Material;
+        product.IsFeatured = dto.IsFeatured;
+        product.DisplayOrder = dto.DisplayOrder;
+        product.Stock = dto.Stock;
         product.FurnitureCategoryId = dto.FurnitureCategoryId;
-        product.Width               = dto.Width;
-        product.Height              = dto.Height;
-        product.Depth               = dto.Depth;
-        product.Weight              = dto.Weight;
+        product.Width = dto.Width;
+        product.Height = dto.Height;
+        product.Depth = dto.Depth;
+        product.Weight = dto.Weight;
 
-        // FIX: translations — Clear()+Add() EF unique index conflict verir.
-        // Əvəzinə mövcud entries-ləri update et, yenilərini əlavə et.
-        foreach (var t in dto.Translations)
-        {
-            var existing = product.Translations.FirstOrDefault(x => x.Lang == t.Lang);
-            if (existing != null)
+        // Translations — köhnəni birbaşa DB-dən sil, yenisini əlavə et
+        await _db.ProductTranslations
+            .Where(t => t.ProductId == dto.Id)
+            .ExecuteDeleteAsync();
+        await _db.ProductTranslations.AddRangeAsync(
+            dto.Translations.Select(t => new ProductTranslation
             {
-                existing.Name        = t.Name;
-                existing.Description = t.Description;
-            }
-            else
+                ProductId = dto.Id,
+                Lang = t.Lang,
+                Name = t.Name,
+                Description = t.Description
+            }));
+
+        // Images — köhnəni sil, yenisini əlavə et
+        await _db.ProductImages
+            .Where(i => i.ProductId == dto.Id)
+            .ExecuteDeleteAsync();
+        await _db.ProductImages.AddRangeAsync(
+            dto.ImageUrls.Select(i => new ProductImage
             {
-                product.Translations.Add(new ProductTranslation
-                {
-                    ProductId   = dto.Id,
-                    Lang        = t.Lang,
-                    Name        = t.Name,
-                    Description = t.Description
-                });
-            }
-        }
+                ProductId = dto.Id,
+                ImageUrl = i.ImageUrl,
+                IsPrimary = i.IsPrimary
+            }));
 
-        // Images yenilə
-        product.Images.Clear();
-        foreach (var i in dto.ImageUrls)
-            product.Images.Add(new ProductImage { ProductId = dto.Id, ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary });
-
-        // Colors yenilə
-        product.Colors.Clear();
-        foreach (var c in dto.Colors)
-            product.Colors.Add(new ProductColor { ProductId = dto.Id, Name = c.Name, HexCode = c.HexCode });
+        // Colors — köhnəni sil, yenisini əlavə et
+        await _db.ProductColors
+            .Where(c => c.ProductId == dto.Id)
+            .ExecuteDeleteAsync();
+        await _db.ProductColors.AddRangeAsync(
+            dto.Colors.Select(c => new ProductColor
+            {
+                ProductId = dto.Id,
+                Name = c.Name,
+                HexCode = c.HexCode
+            }));
 
         _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();
