@@ -193,8 +193,9 @@ public class ProductService : IProductService
 
     public async Task UpdateAsync(UpdateProductDto dto)
     {
-        // Bütün dillər ilə yüklə (lang=az yox, hamısını istəyirik)
-        var product = await _readRepo.GetDetailAsync(dto.Id, "az");
+        // FIX: Bütün dillər ilə yüklə — GetDetailAsync yalnız 1 dil yükləyir,
+        // bu isə .Clear() + yeni translations əlavə edəndə EF unique index conflict verir.
+        var product = await _readRepo.GetForUpdateAsync(dto.Id);
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
@@ -212,16 +213,27 @@ public class ProductService : IProductService
         product.Depth               = dto.Depth;
         product.Weight              = dto.Weight;
 
-        // FIX: translations tam yenilə
-        product.Translations.Clear();
+        // FIX: translations — Clear()+Add() EF unique index conflict verir.
+        // Əvəzinə mövcud entries-ləri update et, yenilərini əlavə et.
         foreach (var t in dto.Translations)
-            product.Translations.Add(new ProductTranslation
+        {
+            var existing = product.Translations.FirstOrDefault(x => x.Lang == t.Lang);
+            if (existing != null)
             {
-                ProductId   = dto.Id,
-                Lang        = t.Lang,
-                Name        = t.Name,
-                Description = t.Description
-            });
+                existing.Name        = t.Name;
+                existing.Description = t.Description;
+            }
+            else
+            {
+                product.Translations.Add(new ProductTranslation
+                {
+                    ProductId   = dto.Id,
+                    Lang        = t.Lang,
+                    Name        = t.Name,
+                    Description = t.Description
+                });
+            }
+        }
 
         // Images yenilə
         product.Images.Clear();

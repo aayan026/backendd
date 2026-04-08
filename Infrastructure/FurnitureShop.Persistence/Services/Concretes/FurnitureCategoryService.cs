@@ -62,14 +62,25 @@ public class FurnitureCategoryService : IFurnitureCategoryService
 
         category.ImageUrl = dto.ImageUrl;
 
-        category.Translations.Clear();
+        // FIX: Clear()+Add() unique index conflict (FurnitureCategoryId+Lang) verir.
+        // Mövcud entries-ləri update et, yenilərini əlavə et.
         foreach (var t in dto.Translations)
-            category.Translations.Add(new FurnitureCategoryTranslation
+        {
+            var existing = category.Translations.FirstOrDefault(x => x.Lang == t.Lang);
+            if (existing != null)
             {
-                Lang = t.Lang,
-                Name = t.Name,
-                FurnitureCategoryId = dto.Id
-            });
+                existing.Name = t.Name;
+            }
+            else
+            {
+                category.Translations.Add(new FurnitureCategoryTranslation
+                {
+                    Lang = t.Lang,
+                    Name = t.Name,
+                    FurnitureCategoryId = dto.Id
+                });
+            }
+        }
 
         _writeRepo.Update(category);
         await _writeRepo.SaveChangesAsync();

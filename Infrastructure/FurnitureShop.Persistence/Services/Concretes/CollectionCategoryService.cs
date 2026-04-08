@@ -67,15 +67,25 @@ public class CollectionCategoryService : ICollectionCategoryService
 
         category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
 
-        // FIX: köhnə translations-ları sil, yenilərini əlavə et
-        category.Translations.Clear();
+        // FIX: Clear()+Add() unique index conflict (CollectionCategoryId+Lang) verir.
+        // Mövcud entries-ləri update et, yenilərini əlavə et.
         foreach (var t in dto.Translations)
-            category.Translations.Add(new CollectionCategoryTranslation
+        {
+            var existing = category.Translations.FirstOrDefault(x => x.Lang == t.Lang);
+            if (existing != null)
             {
-                Lang = t.Lang,
-                Name = t.Name,
-                CollectionCategoryId = dto.Id
-            });
+                existing.Name = t.Name;
+            }
+            else
+            {
+                category.Translations.Add(new CollectionCategoryTranslation
+                {
+                    Lang = t.Lang,
+                    Name = t.Name,
+                    CollectionCategoryId = dto.Id
+                });
+            }
+        }
 
         _writeRepo.Update(category);
         await _writeRepo.SaveChangesAsync();

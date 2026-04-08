@@ -33,7 +33,7 @@ public class CollectionReadRepository : GenericReadRepository<Collection>, IColl
     public async Task<IEnumerable<Collection>> GetAllWithTranslationsAsync(string lang)
         => await Table
             .Where(x => !x.IsDeleted)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Translations)   // Bütün dillər — admin edit üçün
             .OrderBy(x => x.DisplayOrder)
             .ToListAsync();
 }

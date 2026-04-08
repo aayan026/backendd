@@ -91,16 +91,27 @@ public class CollectionService : ICollectionService
         collection.DisplayOrder         = dto.DisplayOrder;
         collection.CollectionCategoryId = dto.CollectionCategoryId;
 
-        // FIX: köhnə translations-ları sil, yenilərini əlavə et
-        collection.Translations.Clear();
+        // FIX: Clear()+Add() unique index conflict (CollectionId+Lang) verir.
+        // Mövcud entries-ləri update et, yenilərini əlavə et.
         foreach (var t in dto.Translations)
-            collection.Translations.Add(new CollectionTranslation
+        {
+            var existing = collection.Translations.FirstOrDefault(x => x.Lang == t.Lang);
+            if (existing != null)
             {
-                Lang         = t.Lang,
-                Name         = t.Name,
-                Description  = t.Description,
-                CollectionId = dto.Id
-            });
+                existing.Name        = t.Name;
+                existing.Description = t.Description;
+            }
+            else
+            {
+                collection.Translations.Add(new CollectionTranslation
+                {
+                    Lang         = t.Lang,
+                    Name         = t.Name,
+                    Description  = t.Description,
+                    CollectionId = dto.Id
+                });
+            }
+        }
 
         // Məhsulları güncəllə
         collection.Products.Clear();

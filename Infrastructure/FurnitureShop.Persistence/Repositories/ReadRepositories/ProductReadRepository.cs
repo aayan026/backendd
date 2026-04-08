@@ -13,7 +13,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
     public async Task<IEnumerable<Product>> GetAllAsync(string lang)
         => await Table
             .Where(x => !x.IsDeleted)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Translations)   // Bütün dillər — admin edit üçün lazımdır
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .Include(x => x.Colors)
             .OrderBy(x => x.DisplayOrder)
@@ -39,7 +39,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
     public async Task<Product?> GetDetailAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id && !x.IsDeleted)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Translations)   // Bütün dillər — admin edit üçün lazımdır
             .Include(x => x.Images)
             .Include(x => x.Colors)
             .Include(x => x.FurnitureCategory)
@@ -130,4 +130,16 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
 
         return results.Take(4);
     }
+
+    /// <summary>
+    /// Update üçün məhsulu BÜTÜN dillər ilə yüklə — lang filter olmadan.
+    /// GetDetailAsync yalnız 1 dil yükləyir; .Clear() zamanı EF unique index conflict (ProductId+Lang) verir.
+    /// </summary>
+    public async Task<Product?> GetForUpdateAsync(int id)
+        => await Table
+            .Where(x => x.Id == id)
+            .Include(x => x.Translations)   // Bütün dillər — filter YOX
+            .Include(x => x.Images)
+            .Include(x => x.Colors)
+            .FirstOrDefaultAsync();
 }
