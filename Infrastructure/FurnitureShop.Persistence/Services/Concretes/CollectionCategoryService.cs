@@ -71,7 +71,6 @@ public class CollectionCategoryService : ICollectionCategoryService
 
         category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
 
-        // FIX: birbaşa DB-dən sil, yenisini əlavə et
         await _db.CollectionCategoryTranslations
             .Where(t => t.CollectionCategoryId == dto.Id)
             .ExecuteDeleteAsync();
@@ -89,74 +88,6 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task DeleteAsync(int id)
     {
-        var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
-        if (category is null)
-            throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
-
-        if (category.Collections != null)
-        {
-            foreach (var col in category.Collections)
-                col.IsDeleted = true;
-        }
-
-        _writeRepo.Delete(category);
-        await _writeRepo.SaveChangesAsync();
-    }
-
-
-    public async Task<IEnumerable<CollectionCategoryDto>> GetAllAsync()
-        => _mapper.Map<IEnumerable<CollectionCategoryDto>>(
-            await _readRepo.GetAllWithTranslationsAsync(Lang));
-
-    public async Task<CollectionCategoryDto?> GetByIdAsync(int id)
-    {
-        var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
-        if (category is null)
-            throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
-        return _mapper.Map<CollectionCategoryDto>(category);
-    }
-
-    public async Task<int> CreateAsync(CreateCollectionCategoryDto dto)
-    {
-        var category = new CollectionCategory
-        {
-            ImageUrl = dto.ImageUrl ?? null,
-            Translations = dto.Translations
-                .Select(t => new CollectionCategoryTranslation { Lang = t.Lang, Name = t.Name })
-                .ToList()
-        };
-
-        await _writeRepo.AddAsync(category);
-        await _writeRepo.SaveChangesAsync();
-        return category.Id;
-    }
-
-    public async Task UpdateAsync(UpdateCollectionCategoryDto dto)
-    {
-        // FIX: bütün dillər ilə yüklə ("az" deyil)
-        var category = await _readRepo.GetWithCollectionsAsync(dto.Id, "az");
-        if (category is null)
-            throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
-
-        category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
-
-        // FIX: köhnə translations-ları sil, yenilərini əlavə et
-        category.Translations.Clear();
-        foreach (var t in dto.Translations)
-            category.Translations.Add(new CollectionCategoryTranslation
-            {
-                Lang = t.Lang,
-                Name = t.Name,
-                CollectionCategoryId = dto.Id
-            });
-
-        _writeRepo.Update(category);
-        await _writeRepo.SaveChangesAsync();
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        // Kolleksiyalarla birlikdə yüklə
         var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));

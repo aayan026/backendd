@@ -61,7 +61,14 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .ToListAsync();
-
+    public async Task<Product?> GetForUpdateAsync(int id)
+    {
+        return await Table
+            .Include(x => x.Translations)
+            .Include(x => x.Images)
+            .Include(x => x.Colors)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+    }
     public async Task<IEnumerable<Product>> GetByColorAsync(string colorName, string lang)
         => await Table
             .Where(x => !x.IsDeleted && x.Colors.Any(c => c.Name.Contains(colorName)))
