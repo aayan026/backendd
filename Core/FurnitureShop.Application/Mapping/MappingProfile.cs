@@ -144,6 +144,7 @@ public class MappingProfile : Profile
         CreateMap<CreateOrderItemDto, OrderItem>();
         CreateMap<CreateOrderDto, Order>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items))
+            .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.TotalPrice))
             .ForMember(d => d.DeliveryInfo, o => o.Ignore());
 
         // ── Address ───────────────────────────────────────────────────────

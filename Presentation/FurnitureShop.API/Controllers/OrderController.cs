@@ -18,13 +18,13 @@ public class OrderController : BaseApiController
         _service = service;
     }
 
-    // ── Müştəri ────────────────────────────────────────────────────────────
+    // ── Müştəri ───────────────────────────────────────────────────────────
 
     [HttpGet("my")]
     public async Task<IActionResult> GetMyOrders()
         => OkResponse(await _service.GetUserOrdersAsync(UserId));
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
         => OkResponse(await _service.GetOrderDetailsAsync(id, UserId));
 
@@ -35,10 +35,7 @@ public class OrderController : BaseApiController
         return CreatedResponse(new { id });
     }
 
-    /// <summary>
-    /// Sifarişi ləğv et — PATCH istifadə edilir (Cancel bir dəyişiklikdir, silmə deyil)
-    /// </summary>
-    [HttpPatch("{id}/cancel")]
+    [HttpPatch("{id:int}/cancel")]
     public async Task<IActionResult> Cancel(int id)
     {
         var message = await _service.CancelAsync(id, UserId);
@@ -54,6 +51,11 @@ public class OrderController : BaseApiController
         var result = await _service.GetAllAsync(pagination);
         return Ok(ApiResponse<List<OrderDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
+
+    [Authorize(Roles = "Admin")]
+    [HttpGet("admin/{id:int}")]
+    public async Task<IActionResult> GetAdminById(int id)
+        => OkResponse(await _service.GetOrderDetailsAsync(id, UserId));
 
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/by-status")]
@@ -75,10 +77,18 @@ public class OrderController : BaseApiController
     }
 
     [Authorize(Roles = "Admin")]
-    [HttpPut("admin/{id}/status")]
+    [HttpPut("admin/{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDto dto)
     {
         await _service.UpdateStatusAsync(id, dto.Status);
         return UpdatedResponse();
+    }
+
+    [Authorize(Roles = "Admin")]
+    [HttpPatch("admin/{id:int}/cancel")]
+    public async Task<IActionResult> AdminCancel(int id)
+    {
+        var message = await _service.CancelAsync(id, UserId);
+        return OkResponse<object>(new { message });
     }
 }

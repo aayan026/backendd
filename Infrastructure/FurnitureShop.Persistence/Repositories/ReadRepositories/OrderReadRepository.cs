@@ -16,9 +16,13 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
             .Where(x => x.UserId == userId)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
+                    .ThenInclude(p => p!.Translations)
+            .Include(x => x.Items)
+                .ThenInclude(i => i.Product)
                     .ThenInclude(p => p!.Images.Where(img => img.IsPrimary))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Collection)
+                    .ThenInclude(c => c!.Translations)
             .Include(x => x.Address)
             .Include(x => x.DeliveryInfo)
             .OrderByDescending(x => x.CreatedAt)
@@ -29,9 +33,13 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
             .Where(x => x.Id == id)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
+                    .ThenInclude(p => p!.Translations)
+            .Include(x => x.Items)
+                .ThenInclude(i => i.Product)
                     .ThenInclude(p => p!.Images)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Collection)
+                    .ThenInclude(c => c!.Translations)
             .Include(x => x.Address)
             .Include(x => x.DeliveryInfo)
             .Include(x => x.DiscountCode)
@@ -96,7 +104,6 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
         var sum = await Table
             .Where(x => x.Status != OrderStatus.Cancelled)
             .SumAsync(x => (decimal?)x.TotalPrice);
-
         return sum ?? 0m;
     }
 
@@ -113,9 +120,9 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
             .GroupBy(i => i.ProductId)
             .Select(g => new
             {
-                ProductId   = g.Key,
-                SoldCount   = g.Sum(i => i.Quantity),
-                Product     = g.First().Product
+                ProductId = g.Key,
+                SoldCount = g.Sum(i => i.Quantity),
+                Product   = g.First().Product
             })
             .OrderByDescending(x => x.SoldCount)
             .Take(limit)

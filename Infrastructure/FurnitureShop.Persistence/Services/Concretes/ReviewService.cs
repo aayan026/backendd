@@ -52,6 +52,7 @@ public class ReviewService : IReviewService
         _log.Information("Yeni rəy əlavə edilir — ProductId: {ProductId} Müəllif: {Author} Reytinq: {Rating}",
             dto.ProductId, dto.AuthorName, dto.Rating);
 
+        // Məhsulun mövcudluğunu yoxla
         var product = await _productReadRepo.GetByIdAsync(dto.ProductId);
         if (product is null)
         {
@@ -59,17 +60,40 @@ public class ReviewService : IReviewService
             throw new NotFoundException("Məhsul tapılmadı.");
         }
 
+        // Reytinq aralığını yoxla
         if (dto.Rating < 1 || dto.Rating > 5)
         {
             _log.Warning("Rəy əlavə edilə bilmədi — Yanlış reytinq — Rating: {Rating}", dto.Rating);
-            throw new Exception("Reytinq 1 ilə 5 arasında olmalıdır.");
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>>
+                {
+                    { "rating", new List<string> { "Reytinq 1 ilə 5 arasında olmalıdır." } }
+                });
+        }
+
+        // Eyni email + məhsul üçün dublikat rəy yoxla
+        if (!string.IsNullOrWhiteSpace(dto.AuthorEmail))
+        {
+            var existing = await _readRepo.AnyAsync(r =>
+                r.ProductId   == dto.ProductId &&
+                r.AuthorEmail == dto.AuthorEmail.Trim().ToLower());
+
+            if (existing)
+            {
+                _log.Warning("Dublikat rəy cəhdi — ProductId: {ProductId} Email: {Email}", dto.ProductId, dto.AuthorEmail);
+                throw new Application.Exceptions.ValidationException(
+                    new Dictionary<string, List<string>>
+                    {
+                        { "review", new List<string> { "Bu məhsula artıq rəy bildirmişsiniz." } }
+                    });
+            }
         }
 
         var review = new Review
         {
             ProductId   = dto.ProductId,
             AuthorName  = dto.AuthorName.Trim(),
-            AuthorEmail = dto.AuthorEmail?.Trim(),
+            AuthorEmail = dto.AuthorEmail?.Trim().ToLower(),
             Rating      = dto.Rating,
             Comment     = dto.Comment.Trim(),
             IsApproved  = true,
@@ -80,8 +104,7 @@ public class ReviewService : IReviewService
         await _writeRepo.AddAsync(review);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Rəy uğurla əlavə edildi — ReviewId: {ReviewId} ProductId: {ProductId} Müəllif: {Author} Reytinq: {Rating}",
-            review.Id, review.ProductId, review.AuthorName, review.Rating);
+        _log.Information("Rəy uğurla əlavə edildi — ReviewId: {ReviewId} ProductId: {ProductId}", review.Id, review.ProductId);
 
         return new ReviewDto
         {

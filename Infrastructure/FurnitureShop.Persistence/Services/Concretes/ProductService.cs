@@ -150,7 +150,7 @@ public class ProductService : IProductService
         _log.Information("Məhsul axtarışı — Açar söz: {Keyword}", keyword);
         var products = await _readRepo.SearchAsync(keyword, Lang);
         var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
-        _log.Information("Axtarış nəticəsi — Açar söz: {Keyword} Tapılan: {Count}", keyword, paged.Pagination.TotalItems);
+        _log.Information("Axtarış nəticəsi — Açar söz: {Keyword} Tapılan: {Count}", keyword, paged.Pagination.TotalCount);
         return new PagedList<ProductDto>
         {
             Items      = _mapper.Map<List<ProductDto>>(paged.Items),

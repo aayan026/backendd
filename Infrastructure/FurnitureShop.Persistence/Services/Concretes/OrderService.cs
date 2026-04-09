@@ -16,42 +16,51 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class OrderService : IOrderService
 {
-    private readonly IOrderReadRepository        _readRepo;
-    private readonly IOrderWriteRepository       _writeRepo;
-    private readonly ICartWriteRepository        _cartWriteRepo;
-    private readonly ICartReadRepository         _cartReadRepo;
+    private readonly IOrderReadRepository         _readRepo;
+    private readonly IOrderWriteRepository        _writeRepo;
+    private readonly ICartWriteRepository         _cartWriteRepo;
+    private readonly ICartReadRepository          _cartReadRepo;
     private readonly IDiscountCodeReadRepository  _discountReadRepo;
     private readonly IDiscountCodeWriteRepository _discountWriteRepo;
-    private readonly ILanguageService            _langService;
-    private readonly IEmailService               _emailService;
-    private readonly UserManager<AppUser>        _userManager;
-    private readonly IMapper                     _mapper;
+    private readonly IProductReadRepository       _productReadRepo;
+    private readonly IProductWriteRepository      _productWriteRepo;
+    private readonly ICollectionReadRepository    _collectionReadRepo;
+    private readonly ILanguageService             _langService;
+    private readonly IEmailService                _emailService;
+    private readonly UserManager<AppUser>         _userManager;
+    private readonly IMapper                      _mapper;
     private static readonly ILogger _log = Log.ForContext<OrderService>();
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public OrderService(
-        IOrderReadRepository        readRepo,
-        IOrderWriteRepository       writeRepo,
-        ICartWriteRepository        cartWriteRepo,
-        ICartReadRepository         cartReadRepo,
+        IOrderReadRepository         readRepo,
+        IOrderWriteRepository        writeRepo,
+        ICartWriteRepository         cartWriteRepo,
+        ICartReadRepository          cartReadRepo,
         IDiscountCodeReadRepository  discountReadRepo,
         IDiscountCodeWriteRepository discountWriteRepo,
-        ILanguageService            langService,
-        IEmailService               emailService,
-        UserManager<AppUser>        userManager,
-        IMapper                     mapper)
+        IProductReadRepository       productReadRepo,
+        IProductWriteRepository      productWriteRepo,
+        ICollectionReadRepository    collectionReadRepo,
+        ILanguageService             langService,
+        IEmailService                emailService,
+        UserManager<AppUser>         userManager,
+        IMapper                      mapper)
     {
-        _readRepo          = readRepo;
-        _writeRepo         = writeRepo;
-        _cartWriteRepo     = cartWriteRepo;
-        _cartReadRepo      = cartReadRepo;
-        _discountReadRepo  = discountReadRepo;
-        _discountWriteRepo = discountWriteRepo;
-        _langService       = langService;
-        _emailService      = emailService;
-        _userManager       = userManager;
-        _mapper            = mapper;
+        _readRepo           = readRepo;
+        _writeRepo          = writeRepo;
+        _cartWriteRepo      = cartWriteRepo;
+        _cartReadRepo       = cartReadRepo;
+        _discountReadRepo   = discountReadRepo;
+        _discountWriteRepo  = discountWriteRepo;
+        _productReadRepo    = productReadRepo;
+        _productWriteRepo   = productWriteRepo;
+        _collectionReadRepo = collectionReadRepo;
+        _langService        = langService;
+        _emailService       = emailService;
+        _userManager        = userManager;
+        _mapper             = mapper;
     }
 
     public async Task<IEnumerable<OrderDto>> GetUserOrdersAsync(string userId)
@@ -69,7 +78,11 @@ public class OrderService : IOrderService
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        if (order.UserId != userId)
+        // Admin istənilən sifarişə baxa bilər
+        var user = await _userManager.FindByIdAsync(userId);
+        var isAdmin = user is not null && await _userManager.IsInRoleAsync(user, "Admin");
+
+        if (!isAdmin && order.UserId != userId)
         {
             _log.Warning("Sifarişə icazəsiz giriş cəhdi — OrderId: {OrderId} UserId: {UserId}", id, userId);
             throw new ForbiddenException(ValidationMessages.Get(Lang, "OrderAccessForbidden"));
@@ -80,8 +93,8 @@ public class OrderService : IOrderService
 
     public async Task<int> CreateAsync(CreateOrderDto dto, string userId)
     {
-        _log.Information("Yeni sifariş yaradılır — UserId: {UserId} MəhsulSayı: {ItemCount} ÜmumiQiymət: {TotalPrice} ÖdəməMetodu: {PaymentMethod}",
-            userId, dto.Items?.Count ?? 0, dto.TotalPrice, dto.PaymentMethod);
+        _log.Information("Yeni sifariş yaradılır — UserId: {UserId} MəhsulSayı: {ItemCount}",
+            userId, dto.Items?.Count ?? 0);
 
         var order = _mapper.Map<Order>(dto);
         order.UserId        = userId;
@@ -91,47 +104,120 @@ public class OrderService : IOrderService
         if (dto.DeliveryInfo is not null)
             order.DeliveryInfo = _mapper.Map<DeliveryInfo>(dto.DeliveryInfo);
 
+        // ── 1. Discount kodu yoxla və tətbiq et ─────────────────────────
+        decimal discountAmount = 0;
+        decimal subtotal       = 0;
+
+        // İlk öncə subtotal-ı hesablayaq (discount üçün lazım)
+        var itemPrices = new Dictionary<int, (decimal Price, int Stock)>();
+        foreach (var item in dto.Items)
+        {
+            if (item.ProductId.HasValue)
+            {
+                var product = await _productReadRepo.GetByIdAsync(item.ProductId.Value);
+                if (product is null)
+                    throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+                if (product.Stock < item.Quantity)
+                    throw new Application.Exceptions.ValidationException(
+                        new Dictionary<string, List<string>>
+                        {
+                            { "stock", new List<string> { $"'{product.Translations.FirstOrDefault()?.Name ?? "Məhsul"}' üçün kifayət qədər stok yoxdur. Mövcud: {product.Stock}" } }
+                        });
+                itemPrices[item.ProductId.Value] = (product.Price, product.Stock);
+                subtotal += product.Price * item.Quantity;
+            }
+            else if (item.CollectionId.HasValue)
+            {
+                var collection = await _collectionReadRepo.GetByIdAsync(item.CollectionId.Value);
+                if (collection is null)
+                    throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
+                subtotal += collection.TotalPrice * item.Quantity;
+            }
+        }
+
         if (dto.DiscountCodeId.HasValue)
         {
             var discount = await _discountReadRepo.GetByIdAsync(dto.DiscountCodeId.Value);
-            if (discount is not null)
+            if (discount is null)
+                throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
+
+            if (discount.Status != DiscountStatus.Active || (discount.ExpiresAt.HasValue && discount.ExpiresAt < DateTime.UtcNow))
+                throw new Application.Exceptions.ValidationException(
+                    new Dictionary<string, List<string>> { { "discountCode", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeExpired") } } });
+
+            if (discount.MaxUses.HasValue && discount.UsedCount >= discount.MaxUses.Value)
+                throw new Application.Exceptions.ValidationException(
+                    new Dictionary<string, List<string>> { { "discountCode", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeUsedUp") } } });
+
+            if (discount.MinOrderAmount.HasValue && subtotal < discount.MinOrderAmount.Value)
+                throw new Application.Exceptions.ValidationException(
+                    new Dictionary<string, List<string>> { { "discountCode", new List<string> { string.Format(ValidationMessages.Get(Lang, "DiscountCodeMinAmount"), discount.MinOrderAmount.Value) } } });
+
+            discountAmount = discount.Type == DiscountType.Percent
+                ? Math.Round(subtotal * discount.Value / 100, 2)
+                : discount.Value;
+
+            discountAmount = Math.Min(discountAmount, subtotal);
+
+            discount.UsedCount++;
+            _discountWriteRepo.Update(discount);
+            _log.Information("Endirim kodu tətbiq edildi — DiscountCodeId: {DiscountCodeId} Endirim: {Amount}", discount.Id, discountAmount);
+        }
+
+        // ── 2. Çatdırılma qiyməti ────────────────────────────────────────
+        const decimal freeShippingThreshold = 500m;
+        const decimal shippingCost          = 15m;
+        order.ShippingCost   = subtotal >= freeShippingThreshold ? 0 : shippingCost;
+        order.DiscountAmount = discountAmount;
+        order.TotalPrice     = subtotal - discountAmount + order.ShippingCost;
+
+        // ── 3. OrderItem-lərə UnitPrice set et (tarixçə qorunur) ─────────
+        foreach (var orderItem in order.Items)
+        {
+            if (orderItem.ProductId.HasValue && itemPrices.TryGetValue(orderItem.ProductId.Value, out var info))
+                orderItem.UnitPrice = info.Price;
+            else if (orderItem.CollectionId.HasValue)
             {
-                discount.UsedCount++;
-                _discountWriteRepo.Update(discount);
-                _log.Information("Endirim kodu tətbiq edildi — DiscountCodeId: {DiscountCodeId} UsedCount: {UsedCount}",
-                    discount.Id, discount.UsedCount);
+                var col = await _collectionReadRepo.GetByIdAsync(orderItem.CollectionId.Value);
+                if (col is not null) orderItem.UnitPrice = col.TotalPrice;
             }
         }
 
         await _writeRepo.AddAsync(order);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} UserId: {UserId} ÜmumiQiymət: {TotalPrice}",
-            order.Id, userId, order.TotalPrice);
+        // ── 4. Stock azalt ───────────────────────────────────────────────
+        foreach (var item in dto.Items.Where(i => i.ProductId.HasValue))
+        {
+            var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
+            if (product is not null)
+            {
+                product.Stock -= item.Quantity;
+                _productWriteRepo.Update(product);
+            }
+        }
+        await _productWriteRepo.SaveChangesAsync();
 
-        // Cart-ı təmizlə
+        _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} TotalPrice: {TotalPrice}", order.Id, order.TotalPrice);
+
+        // ── 5. Cart-ı təmizlə ─────────────────────────────────────────────
         var cart = await _cartReadRepo.GetByUserIdAsync(userId);
         if (cart is not null)
         {
-            var cartItemCount = cart.Items.Count;
             cart.Items.Clear();
             _cartWriteRepo.Update(cart);
             await _cartWriteRepo.SaveChangesAsync();
-            _log.Information("Sifariş sonrası səbət təmizləndi — UserId: {UserId} SilənMəhsulSayı: {Count}", userId, cartItemCount);
         }
 
-        // Email — müştəriyə
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is not null)
+        // ── 6. Email bildirişləri ─────────────────────────────────────────
+        var userEntity = await _userManager.FindByIdAsync(userId);
+        if (userEntity is not null)
         {
             _ = _emailService.SendOrderConfirmationAsync(
-                user.Email!, $"{user.Name} {user.Surname}",
+                userEntity.Email!, $"{userEntity.Name} {userEntity.Surname}",
                 order.Id, order.TotalPrice, Lang);
-            _log.Information("Sifariş təsdiq emaili göndərildi — UserId: {UserId} Email: {Email} OrderId: {OrderId}",
-                userId, user.Email, order.Id);
         }
 
-        // Email — adminə
         var payMethodLabel = order.PaymentMethod switch
         {
             PaymentMethod.CashOnDelivery => "Nağd",
@@ -139,11 +225,10 @@ public class OrderService : IOrderService
             PaymentMethod.BankTransfer   => "Bank köçürməsi",
             _                            => order.PaymentMethod.ToString()
         };
-
         _ = _emailService.SendAdminOrderNotificationAsync(
             order.Id,
-            user is not null ? $"{user.Name} {user.Surname}" : "—",
-            user?.Email ?? "—",
+            userEntity is not null ? $"{userEntity.Name} {userEntity.Surname}" : "—",
+            userEntity?.Email ?? "—",
             order.TotalPrice,
             payMethodLabel,
             order.Note ?? "—",
@@ -160,7 +245,10 @@ public class OrderService : IOrderService
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        if (order.UserId != userId)
+        var user    = await _userManager.FindByIdAsync(userId);
+        var isAdmin = user is not null && await _userManager.IsInRoleAsync(user, "Admin");
+
+        if (!isAdmin && order.UserId != userId)
         {
             _log.Warning("Sifariş ləğvinə icazəsiz cəhd — OrderId: {OrderId} UserId: {UserId}", id, userId);
             throw new ForbiddenException(ValidationMessages.Get(Lang, "OrderCancelForbidden"));
@@ -180,20 +268,16 @@ public class OrderService : IOrderService
                     { "order", new List<string> { ValidationMessages.Get(Lang, "OrderAlreadyDelivered") } }
                 });
 
-        var oldStatus = order.Status;
         order.Status = OrderStatus.Cancelled;
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Sifariş ləğv edildi — OrderId: {OrderId} UserId: {UserId} EskiStatus: {OldStatus}",
-            id, userId, oldStatus);
-
+        _log.Information("Sifariş ləğv edildi — OrderId: {OrderId}", id);
         return ValidationMessages.Get(Lang, "OrderCancelled");
     }
 
     public async Task<PagedList<OrderDto>> GetAllAsync(PaginationParams pagination)
     {
-        _log.Information("Admin — Bütün sifarişlər sorğusu — Səhifə: {Page} ÖlçüsU: {PageSize}", pagination.Page, pagination.PageSize);
         var (items, total) = await _readRepo.GetAllPagedAsync(pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
@@ -204,7 +288,6 @@ public class OrderService : IOrderService
 
     public async Task<PagedList<OrderDto>> GetByStatusAsync(OrderStatus status, PaginationParams pagination)
     {
-        _log.Information("Admin — Statusa görə sifarişlər — Status: {Status}", status);
         var (items, total) = await _readRepo.GetByStatusPagedAsync(status, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
@@ -215,7 +298,6 @@ public class OrderService : IOrderService
 
     public async Task<PagedList<OrderDto>> GetByDateRangeAsync(DateTime from, DateTime to, PaginationParams pagination)
     {
-        _log.Information("Admin — Tarix aralığına görə sifarişlər — {From} — {To}", from, to);
         var (items, total) = await _readRepo.GetByDateRangePagedAsync(from, to, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
@@ -230,20 +312,17 @@ public class OrderService : IOrderService
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        var oldStatus = order.Status;
         order.Status = status;
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Sifariş statusu dəyişdirildi — OrderId: {OrderId} EskiStatus: {OldStatus} YeniStatus: {NewStatus}",
-            id, oldStatus, status);
+        _log.Information("Sifariş statusu dəyişdirildi — OrderId: {OrderId} YeniStatus: {Status}", id, status);
 
         if (order.User is not null)
         {
             _ = _emailService.SendOrderStatusChangedAsync(
                 order.User.Email!, $"{order.User.Name} {order.User.Surname}",
                 order.Id, status.ToString(), Lang);
-            _log.Information("Status dəyişikliyi emaili göndərildi — OrderId: {OrderId} Email: {Email}", id, order.User.Email);
         }
     }
 
@@ -258,8 +337,7 @@ public class OrderService : IOrderService
 
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
-
-        _log.Information("Ödəniş uğurlu — OrderId: {OrderId} YeniStatus: {Status}", orderId, order.Status);
+        _log.Information("Ödəniş uğurlu — OrderId: {OrderId}", orderId);
     }
 
     public async Task MarkPaymentFailedAsync(int orderId)
@@ -270,7 +348,6 @@ public class OrderService : IOrderService
         order.PaymentStatus = PaymentStatus.Failed;
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
-
         _log.Warning("Ödəniş uğursuz — OrderId: {OrderId}", orderId);
     }
 }

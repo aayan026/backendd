@@ -7,6 +7,7 @@ public class CreateOrderDto
     public OrderType Type { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public string? Note { get; set; }
+    public decimal TotalPrice { get; set; }
     public CreateDeliveryInfoDto? DeliveryInfo { get; set; }
     public List<CreateOrderItemDto> Items { get; set; } = new();
 }
