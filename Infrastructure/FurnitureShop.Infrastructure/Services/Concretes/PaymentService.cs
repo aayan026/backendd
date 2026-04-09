@@ -1,81 +1,120 @@
-using FurnitureShop.Application.Dtos.Payment;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.Extensions.Configuration;
-using Stripe;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FurnitureShop.Infrastructure.Services.Concretes;
 
 public class PaymentService : IPaymentService
 {
-    private readonly IConfiguration _config;
-    private readonly IOrderService _orderService;
+    private readonly IConfiguration  _config;
+    private readonly IOrderService   _orderService;
+    private readonly HttpClient      _http;
 
-    public PaymentService(IConfiguration config, IOrderService orderService)
+    private static readonly JsonSerializerOptions _json = new()
     {
-        _config = config;
+        PropertyNamingPolicy        = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition      = JsonIgnoreCondition.WhenWritingNull,
+    };
+
+    public PaymentService(IConfiguration config, IOrderService orderService, IHttpClientFactory httpFactory)
+    {
+        _config       = config;
         _orderService = orderService;
-        StripeConfiguration.ApiKey = _config["Stripe:SecretKey"]
-            ?? throw new InvalidOperationException("Stripe:SecretKey is not configured.");
+        _http         = httpFactory.CreateClient("Payriff");
     }
 
-    public async Task<PaymentIntentResponseDto> CreatePaymentIntentAsync(CreatePaymentIntentDto dto)
+    // ── Ödənişi Başlat ───────────────────────────────────────────────────
+    public async Task<string> InitiateAsync(int orderId, decimal amount, string description, string lang)
     {
-        var options = new PaymentIntentCreateOptions
+        var secret      = _config["Payriff:SecretKey"]!;
+        var frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:5173";
+
+        var langCode = lang switch { "ru" => "RU", "en" => "EN", _ => "AZ" };
+
+        var body = new
         {
-            Amount = (long)(dto.Amount * 100),
-            Currency = dto.Currency.ToLower(),
-            Metadata = new Dictionary<string, string>
-            {
-                { "orderId", dto.OrderId.ToString() }
-            }
+            amount,
+            currencyType = "AZN",
+            description,
+            approveUrl = $"{frontendUrl}/payment/success?orderId={orderId}",
+            cancelUrl  = $"{frontendUrl}/payment/cancel?orderId={orderId}",
+            declineUrl = $"{frontendUrl}/payment/failed?orderId={orderId}",
+            language   = langCode,
+            cardSave   = false,
         };
 
-        var service = new PaymentIntentService();
-        var intent = await service.CreateAsync(options);
-
-        return new PaymentIntentResponseDto
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            "https://api.payriff.com/api/v2/createOrder")
         {
-            ClientSecret = intent.ClientSecret,
-            PaymentIntentId = intent.Id
+            Content = JsonContent.Create(body, options: _json),
         };
+        request.Headers.TryAddWithoutValidation("Authorization", secret);
+
+        var response = await _http.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<PayriffCreateResponse>(_json);
+
+        if (result?.Code != "00000" || result.Payload?.PaymentUrl is null)
+            throw new InvalidOperationException(
+                $"Payriff xəta: {result?.Message ?? "Bilinmir"}");
+
+        return result.Payload.PaymentUrl;
     }
 
-    public async Task<bool> ConfirmPaymentAsync(ConfirmPaymentDto dto)
+    // ── Ödənişi Yoxla ────────────────────────────────────────────────────
+    public async Task<bool> VerifyAsync(string payriffOrderId, string sessionId)
     {
-        var service = new PaymentIntentService();
-        var intent = await service.GetAsync(dto.PaymentIntentId);
+        var secret = _config["Payriff:SecretKey"]!;
 
-        if (intent.Status == "succeeded")
+        var body = new { orderId = payriffOrderId, sessionId };
+
+        var request = new HttpRequestMessage(HttpMethod.Post,
+            "https://api.payriff.com/api/v2/getOrderStatus")
         {
-            await _orderService.MarkPaymentPaidAsync(dto.OrderId);
-            return true;
-        }
+            Content = JsonContent.Create(body, options: _json),
+        };
+        request.Headers.TryAddWithoutValidation("Authorization", secret);
 
-        return false;
+        var response = await _http.SendAsync(request);
+        if (!response.IsSuccessStatusCode) return false;
+
+        var result = await response.Content.ReadFromJsonAsync<PayriffStatusResponse>(_json);
+
+        if (result?.Code != "00000") return false;
+
+        var approved = string.Equals(
+            result.Payload?.Status, "APPROVED", StringComparison.OrdinalIgnoreCase);
+
+        return approved;
     }
 
-    public async Task HandleWebhookAsync(string payload, string signature)
+    // ── Internal DTOs ────────────────────────────────────────────────────
+    private sealed class PayriffCreateResponse
     {
-        var webhookSecret = _config["Stripe:WebhookSecret"]
-            ?? throw new InvalidOperationException("Stripe:WebhookSecret is not configured.");
+        [JsonPropertyName("code")]    public string? Code    { get; set; }
+        [JsonPropertyName("message")] public string? Message { get; set; }
+        [JsonPropertyName("payload")] public PayriffCreatePayload? Payload { get; set; }
+    }
 
-        var stripeEvent = EventUtility.ConstructEvent(payload, signature, webhookSecret);
+    private sealed class PayriffCreatePayload
+    {
+        [JsonPropertyName("orderId")]    public string? OrderId    { get; set; }
+        [JsonPropertyName("sessionId")]  public string? SessionId  { get; set; }
+        [JsonPropertyName("paymentUrl")] public string? PaymentUrl { get; set; }
+    }
 
-        switch (stripeEvent.Type)
-        {
-            case "payment_intent.succeeded":
-                var intent = stripeEvent.Data.Object as PaymentIntent;
-                if (intent?.Metadata.TryGetValue("orderId", out var orderIdStr) == true
-                    && int.TryParse(orderIdStr, out var orderId))
-                    await _orderService.MarkPaymentPaidAsync(orderId);
-                break;
+    private sealed class PayriffStatusResponse
+    {
+        [JsonPropertyName("code")]    public string? Code    { get; set; }
+        [JsonPropertyName("message")] public string? Message { get; set; }
+        [JsonPropertyName("payload")] public PayriffStatusPayload? Payload { get; set; }
+    }
 
-            case "payment_intent.payment_failed":
-                var failed = stripeEvent.Data.Object as PaymentIntent;
-                if (failed?.Metadata.TryGetValue("orderId", out var failedIdStr) == true
-                    && int.TryParse(failedIdStr, out var failedId))
-                    await _orderService.MarkPaymentFailedAsync(failedId);
-                break;
-        }
+    private sealed class PayriffStatusPayload
+    {
+        [JsonPropertyName("status")] public string? Status { get; set; }
     }
 }

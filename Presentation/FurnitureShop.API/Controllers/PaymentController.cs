@@ -1,3 +1,4 @@
+using FurnitureShop.Application.Dtos.Order;
 using FurnitureShop.Application.Dtos.Payment;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
@@ -9,52 +10,49 @@ namespace FurnitureShop.API.Controllers;
 public class PaymentController : BaseApiController
 {
     private readonly IPaymentService _paymentService;
+    private readonly IOrderService   _orderService;
 
-    public PaymentController(IPaymentService paymentService)
+    public PaymentController(IPaymentService paymentService, IOrderService orderService)
     {
         _paymentService = paymentService;
+        _orderService   = orderService;
     }
 
     /// <summary>
-    /// Stripe PaymentIntent yaradır — client-side ödəniş üçün clientSecret qaytarır
+    /// Kartla ödəniş üçün Payriff ödəniş URL-i yaradır.
+    /// Əvvəlcə POST /api/orders ilə sifariş yarat, sonra bu endpoint-i çağır.
     /// </summary>
     [Authorize]
-    [HttpPost("create-intent")]
-    public async Task<IActionResult> CreateIntent([FromBody] CreatePaymentIntentDto dto)
-        => OkResponse(await _paymentService.CreatePaymentIntentAsync(dto));
-
-    /// <summary>
-    /// Ödənişi server-side təsdiqləyir
-    /// </summary>
-    [Authorize]
-    [HttpPost("confirm")]
-    public async Task<IActionResult> Confirm([FromBody] ConfirmPaymentDto dto)
+    [HttpPost("initiate")]
+    public async Task<IActionResult> Initiate([FromBody] InitiatePaymentDto dto)
     {
-        var success = await _paymentService.ConfirmPaymentAsync(dto);
-        return OkResponse(new { success });
+        var order = await _orderService.GetOrderDetailsAsync(dto.OrderId, UserId);
+        if (order is null)
+            return NotFound();
+
+        var description = $"Amore Mebel - Sifariş #{dto.OrderId}";
+        var lang        = Request.Headers["Accept-Language"].FirstOrDefault() ?? "az";
+
+        var paymentUrl = await _paymentService.InitiateAsync(
+            dto.OrderId, order.TotalPrice, description, lang);
+
+        return OkResponse(new { paymentUrl });
     }
 
     /// <summary>
-    /// Stripe Webhook — ödəniş statusunu avtomatik idarə edir
+    /// Payriff redirect-dən sonra frontend bu endpoint-i çağırır — ödənişi təsdiq edir.
     /// </summary>
-    [HttpPost("webhook")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Webhook()
+    [Authorize]
+    [HttpPost("verify")]
+    public async Task<IActionResult> Verify([FromBody] VerifyPaymentDto dto)
     {
-        var payload   = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
-        var signature = Request.Headers["Stripe-Signature"].FirstOrDefault();
+        var verified = await _paymentService.VerifyAsync(dto.PayriffOrderId, dto.SessionId);
 
-        if (string.IsNullOrWhiteSpace(signature))
-            return BadRequest("Missing Stripe-Signature header.");
+        if (verified)
+            await _orderService.MarkPaymentPaidAsync(dto.OrderId);
+        else
+            await _orderService.MarkPaymentFailedAsync(dto.OrderId);
 
-        try
-        {
-            await _paymentService.HandleWebhookAsync(payload, signature);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { error = ex.Message });
-        }
+        return OkResponse(new { success = verified });
     }
 }

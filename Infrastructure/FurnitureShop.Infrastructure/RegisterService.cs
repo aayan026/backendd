@@ -20,23 +20,30 @@ public static class RegisterService
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileUploadService, CloudinaryFileUploadService>();
         services.AddScoped<IPaymentService, PaymentService>();
+
+        // Payriff üçün HttpClient
+        services.AddHttpClient("Payriff", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme    = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultScheme             = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
         })
         .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
             {
-                ValidateIssuer           = true,
-                ValidateAudience         = true,
-                ValidateLifetime         = true,
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer              = configuration["JWT:Issuer"],
-                ValidAudience            = configuration["JWT:Audience"],
-                IssuerSigningKey         = new SymmetricSecurityKey(
+                ValidIssuer = configuration["JWT:Issuer"],
+                ValidAudience = configuration["JWT:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(jwtSecret))
             };
         });
