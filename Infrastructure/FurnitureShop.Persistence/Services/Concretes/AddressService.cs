@@ -6,33 +6,35 @@ using FurnitureShop.Application.Repsitories.WriteRepositories;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
+using Serilog;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class AddressService : IAddressService
 {
-    private readonly IAddressReadRepository _readRepo;
+    private readonly IAddressReadRepository  _readRepo;
     private readonly IAddressWriteRepository _writeRepo;
-    private readonly ILanguageService _langService;
-    private readonly IMapper _mapper;
+    private readonly ILanguageService        _langService;
+    private readonly IMapper                 _mapper;
+    private static readonly ILogger _log = Log.ForContext<AddressService>();
 
     private string lang => _langService.GetCurrentLanguage();
 
-
     public AddressService(
-        IAddressReadRepository readRepo,
+        IAddressReadRepository  readRepo,
         IAddressWriteRepository writeRepo,
-        ILanguageService langService,
-        IMapper mapper)
+        ILanguageService        langService,
+        IMapper                 mapper)
     {
-        _readRepo = readRepo;
-        _writeRepo = writeRepo;
+        _readRepo    = readRepo;
+        _writeRepo   = writeRepo;
         _langService = langService;
-        _mapper = mapper;
+        _mapper      = mapper;
     }
 
     public async Task<IEnumerable<AddressDto>> GetAllAsync(string userId)
     {
+        _log.Information("Ünvanlar sorğusu — UserId: {UserId}", userId);
         var addresses = await _readRepo.GetByUserIdAsync(userId);
         return _mapper.Map<IEnumerable<AddressDto>>(addresses);
     }
@@ -48,9 +50,10 @@ public class AddressService : IAddressService
 
     public async Task<AddressDto> CreateAsync(string userId, CreateAddressDto dto)
     {
-        // əgər bu birinci ünvandırsa avtomatik default et
+        _log.Information("Yeni ünvan əlavə edilir — UserId: {UserId} Şəhər: {City}", userId, dto.City);
+
         var existing = await _readRepo.GetByUserIdAsync(userId);
-        var isFirst = !existing.Any();
+        var isFirst  = !existing.Any();
 
         var address = _mapper.Map<Address>(dto);
         address.UserId = userId;
@@ -58,7 +61,6 @@ public class AddressService : IAddressService
         if (isFirst)
             address.IsDefault = true;
 
-        // yeni ünvan default olaraq seçilibsə köhnəni sıfırla
         if (dto.IsDefault && !isFirst)
         {
             var allAddresses = existing.ToList();
@@ -71,12 +73,15 @@ public class AddressService : IAddressService
 
         await _writeRepo.AddAsync(address);
         await _writeRepo.SaveChangesAsync();
+
+        _log.Information("Ünvan yaradıldı — UserId: {UserId} AddressId: {AddressId} Default: {IsDefault}",
+            userId, address.Id, address.IsDefault);
+
         return _mapper.Map<AddressDto>(address);
     }
 
     public async Task SetDefaultAsync(string userId, int addressId)
     {
-
         var allAddresses = (await _readRepo.GetByUserIdAsync(userId)).ToList();
 
         var target = allAddresses.FirstOrDefault(x => x.Id == addressId);
@@ -90,6 +95,7 @@ public class AddressService : IAddressService
         }
 
         await _writeRepo.SaveChangesAsync();
+        _log.Information("Default ünvan dəyişdirildi — UserId: {UserId} AddressId: {AddressId}", userId, addressId);
     }
 
     public async Task UpdateAsync(string userId, int addressId, UpdateAddressDto dto)
@@ -113,11 +119,12 @@ public class AddressService : IAddressService
 
         _writeRepo.Update(address);
         await _writeRepo.SaveChangesAsync();
+
+        _log.Information("Ünvan yeniləndi — UserId: {UserId} AddressId: {AddressId}", userId, addressId);
     }
 
     public async Task DeleteAsync(string userId, int addressId)
     {
-
         var address = await _readRepo.GetByIdAsync(addressId);
         if (address is null || address.UserId != userId)
             throw new NotFoundException(ValidationMessages.Get(lang, "AddressNotFound"));
@@ -125,7 +132,9 @@ public class AddressService : IAddressService
         _writeRepo.Delete(address);
         await _writeRepo.SaveChangesAsync();
 
-        // silinən default idi isə başqa birinə default ver
+        _log.Information("Ünvan silindi — UserId: {UserId} AddressId: {AddressId} DefaultIdimi: {WasDefault}",
+            userId, addressId, address.IsDefault);
+
         if (address.IsDefault)
         {
             var remaining = (await _readRepo.GetByUserIdAsync(userId)).FirstOrDefault();
@@ -134,6 +143,7 @@ public class AddressService : IAddressService
                 remaining.IsDefault = true;
                 _writeRepo.Update(remaining);
                 await _writeRepo.SaveChangesAsync();
+                _log.Information("Yeni default ünvan təyin edildi — UserId: {UserId} AddressId: {AddressId}", userId, remaining.Id);
             }
         }
     }

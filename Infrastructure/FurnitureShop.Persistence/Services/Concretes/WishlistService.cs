@@ -6,33 +6,35 @@ using FurnitureShop.Application.Repsitories.WriteRepositories;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
+using Serilog;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class WishlistService : IWishlistService
 {
-    private readonly IWishlistReadRepository _readRepo;
+    private readonly IWishlistReadRepository  _readRepo;
     private readonly IWishlistWriteRepository _writeRepo;
-    private readonly ILanguageService _langService;
-    private readonly IMapper _mapper;
+    private readonly ILanguageService         _langService;
+    private readonly IMapper                  _mapper;
+    private static readonly ILogger _log = Log.ForContext<WishlistService>();
 
     private string lang => _langService.GetCurrentLanguage();
 
-
     public WishlistService(
-        IWishlistReadRepository readRepo,
+        IWishlistReadRepository  readRepo,
         IWishlistWriteRepository writeRepo,
-        ILanguageService langService,
-        IMapper mapper)
+        ILanguageService         langService,
+        IMapper                  mapper)
     {
-        _readRepo = readRepo;
-        _writeRepo = writeRepo;
+        _readRepo    = readRepo;
+        _writeRepo   = writeRepo;
         _langService = langService;
-        _mapper = mapper;
+        _mapper      = mapper;
     }
 
     public async Task<WishlistDto> GetAsync(string userId)
     {
+        _log.Information("İstək siyahısı sorğusu — UserId: {UserId}", userId);
         var wishlist = await _readRepo.GetByUserIdAsync(userId);
         if (wishlist is null)
             return new WishlistDto();
@@ -41,7 +43,6 @@ public class WishlistService : IWishlistService
 
     public async Task AddItemAsync(string userId, int? productId, int? collectionId)
     {
-
         if (productId is null && collectionId is null)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>
@@ -58,27 +59,33 @@ public class WishlistService : IWishlistService
             await _writeRepo.SaveChangesAsync();
         }
 
-        // artıq varsa əlavə etmə
         var alreadyExists = wishlist.Items.Any(x =>
-            x.ProductId == productId &&
+            x.ProductId    == productId &&
             x.CollectionId == collectionId);
 
-        if (alreadyExists) return;
+        if (alreadyExists)
+        {
+            _log.Information("Məhsul artıq istək siyahısındadır — UserId: {UserId} ProductId: {ProductId} CollectionId: {CollectionId}",
+                userId, productId, collectionId);
+            return;
+        }
 
         wishlist.Items.Add(new WishlistItem
         {
-            WishlistId = wishlist.Id,
-            ProductId = productId,
+            WishlistId   = wishlist.Id,
+            ProductId    = productId,
             CollectionId = collectionId
         });
 
         _writeRepo.Update(wishlist);
         await _writeRepo.SaveChangesAsync();
+
+        _log.Information("İstək siyahısına məhsul əlavə edildi — UserId: {UserId} ProductId: {ProductId} CollectionId: {CollectionId}",
+            userId, productId, collectionId);
     }
 
     public async Task RemoveItemAsync(string userId, int wishlistItemId)
     {
-
         var wishlist = await _readRepo.GetByUserIdAsync(userId);
         if (wishlist is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "WishlistNotFound"));
@@ -90,6 +97,9 @@ public class WishlistService : IWishlistService
         wishlist.Items.Remove(item);
         _writeRepo.Update(wishlist);
         await _writeRepo.SaveChangesAsync();
+
+        _log.Information("İstək siyahısından məhsul silindi — UserId: {UserId} WishlistItemId: {ItemId} ProductId: {ProductId}",
+            userId, wishlistItemId, item.ProductId);
     }
 
     public async Task<bool> IsInWishlistAsync(string userId, int? productId, int? collectionId)
@@ -98,7 +108,7 @@ public class WishlistService : IWishlistService
         if (wishlist is null) return false;
 
         return wishlist.Items.Any(x =>
-            x.ProductId == productId &&
+            x.ProductId    == productId &&
             x.CollectionId == collectionId);
     }
 }

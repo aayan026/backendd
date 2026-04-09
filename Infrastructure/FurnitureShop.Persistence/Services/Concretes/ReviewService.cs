@@ -5,6 +5,7 @@ using FurnitureShop.Application.Repsitories.ReadRepositories;
 using FurnitureShop.Application.Repsitories.WriteRepositories;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Domain.Entities.Concretes;
+using Serilog;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
@@ -13,6 +14,7 @@ public class ReviewService : IReviewService
     private readonly IReviewReadRepository  _readRepo;
     private readonly IReviewWriteRepository _writeRepo;
     private readonly IProductReadRepository _productReadRepo;
+    private static readonly ILogger _log = Log.ForContext<ReviewService>();
 
     public ReviewService(
         IReviewReadRepository  readRepo,
@@ -26,6 +28,7 @@ public class ReviewService : IReviewService
 
     public async Task<PagedList<ReviewDto>> GetByProductAsync(int productId, PaginationParams pagination)
     {
+        _log.Information("Məhsul rəyləri sorğusu — ProductId: {ProductId}", productId);
         var reviews = await _readRepo.GetByProductAsync(productId);
         var paged   = PagedList<Review>.Create(reviews, pagination.Page, pagination.PageSize);
 
@@ -46,13 +49,21 @@ public class ReviewService : IReviewService
 
     public async Task<ReviewDto> CreateAsync(CreateReviewDto dto)
     {
-        // məhsulun mövcudluğunu yoxla
+        _log.Information("Yeni rəy əlavə edilir — ProductId: {ProductId} Müəllif: {Author} Reytinq: {Rating}",
+            dto.ProductId, dto.AuthorName, dto.Rating);
+
         var product = await _productReadRepo.GetByIdAsync(dto.ProductId);
         if (product is null)
+        {
+            _log.Warning("Rəy əlavə edilə bilmədi — Məhsul tapılmadı — ProductId: {ProductId}", dto.ProductId);
             throw new NotFoundException("Məhsul tapılmadı.");
+        }
 
         if (dto.Rating < 1 || dto.Rating > 5)
+        {
+            _log.Warning("Rəy əlavə edilə bilmədi — Yanlış reytinq — Rating: {Rating}", dto.Rating);
             throw new Exception("Reytinq 1 ilə 5 arasında olmalıdır.");
+        }
 
         var review = new Review
         {
@@ -68,6 +79,9 @@ public class ReviewService : IReviewService
 
         await _writeRepo.AddAsync(review);
         await _writeRepo.SaveChangesAsync();
+
+        _log.Information("Rəy uğurla əlavə edildi — ReviewId: {ReviewId} ProductId: {ProductId} Müəllif: {Author} Reytinq: {Rating}",
+            review.Id, review.ProductId, review.AuthorName, review.Rating);
 
         return new ReviewDto
         {
