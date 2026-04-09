@@ -1,7 +1,8 @@
-﻿using FurnitureShop.Application.Common.Responses;
+using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Exceptions;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
+using Serilog;
 using System.Text.Json;
 
 namespace FurnitureShop.API.Middlewares;
@@ -11,7 +12,7 @@ public class ExceptionHandlerMiddleware
     private readonly RequestDelegate _next;
     private readonly IWebHostEnvironment _env;
     private readonly IServiceScopeFactory _scopeFactory;
-
+    private static readonly Serilog.ILogger _logger = Log.ForContext<ExceptionHandlerMiddleware>();
     private static readonly Dictionary<string, Dictionary<string, string>> _fieldNames = new()
     {
         ["az"] = new()
@@ -154,11 +155,19 @@ public class ExceptionHandlerMiddleware
                     .ToDictionary(
                         g => LocalizeField(g.Key, lang),
                         g => g.Select(e => LocalizeMessage(e.ErrorMessage, lang)).ToList());
+
+                _logger.Warning("Validation xətası — {Path} — {Errors}",
+                    context.Request.Path, fvErrors);
+
                 response = ApiResponse<object>.ValidationError(fvErrors, ValidationMessages.Get(lang, "ValidationError"));
                 break;
 
             case Application.Exceptions.ValidationException validationEx:
                 context.Response.StatusCode = 422;
+
+                _logger.Warning("Validation xətası — {Path} — {Errors}",
+                    context.Request.Path, validationEx.Errors);
+
                 response = ApiResponse<object>.ValidationError(
                     LocalizeErrors(validationEx.Errors, lang),
                     ValidationMessages.Get(lang, "ValidationError"));
@@ -166,24 +175,42 @@ public class ExceptionHandlerMiddleware
 
             case NotFoundException notFoundEx:
                 context.Response.StatusCode = 404;
+
+                _logger.Warning("Tapılmadı — {Path} — {Message}",
+                    context.Request.Path, notFoundEx.Message);
+
                 response = ApiResponse<object>.NotFound(LocalizeMessage(notFoundEx.Message, lang));
                 break;
 
             case UnauthorizedException unauthorizedEx:
                 context.Response.StatusCode = 401;
+
+                _logger.Warning("İcazəsiz giriş — {Path} — {Message}",
+                    context.Request.Path, unauthorizedEx.Message);
+
                 response = ApiResponse<object>.Unauthorized(LocalizeMessage(unauthorizedEx.Message, lang));
                 break;
 
             case ForbiddenException forbiddenEx:
                 context.Response.StatusCode = 403;
+
+                _logger.Warning("Qadağan — {Path} — {Message}",
+                    context.Request.Path, forbiddenEx.Message);
+
                 response = ApiResponse<object>.Forbidden(LocalizeMessage(forbiddenEx.Message, lang));
                 break;
 
             default:
                 context.Response.StatusCode = 500;
+
+                _logger.Error(exception,
+                    "Gözlənilməz server xətası — {Path} — TraceId: {TraceId}",
+                    context.Request.Path, traceId);
+
                 var serverMessage = _env.IsDevelopment()
                     ? exception.Message
                     : ValidationMessages.Get(lang, "ServerError");
+
                 response = ApiResponse<object>.ServerError(serverMessage, traceId);
                 break;
         }
