@@ -7,8 +7,6 @@ using FurnitureShop.Application.Repsitories.WriteRepositories;
 using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Domain.Entities.Concretes;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
-using FurnitureShop.Persistence.Datas;
-using Microsoft.EntityFrameworkCore;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
@@ -18,7 +16,6 @@ public class CollectionCategoryService : ICollectionCategoryService
     private readonly ICollectionCategoryWriteRepository _writeRepo;
     private readonly ILanguageService _langService;
     private readonly IMapper _mapper;
-    private readonly AppDbContext _db;
 
     private string Lang => _langService.GetCurrentLanguage();
 
@@ -26,14 +23,12 @@ public class CollectionCategoryService : ICollectionCategoryService
         ICollectionCategoryReadRepository readRepo,
         ICollectionCategoryWriteRepository writeRepo,
         ILanguageService langService,
-        IMapper mapper,
-        AppDbContext db)
+        IMapper mapper)
     {
         _readRepo = readRepo;
         _writeRepo = writeRepo;
         _langService = langService;
         _mapper = mapper;
-        _db = db;
     }
 
     public async Task<IEnumerable<CollectionCategoryDto>> GetAllAsync()
@@ -65,22 +60,22 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task UpdateAsync(UpdateCollectionCategoryDto dto)
     {
-        var category = await _readRepo.GetWithCollectionsAsync(dto.Id, Lang);
+        // FIX: bütün dillər ilə yüklə ("az" deyil)
+        var category = await _readRepo.GetWithCollectionsAsync(dto.Id, "az");
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
 
         category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
 
-        await _db.CollectionCategoryTranslations
-            .Where(t => t.CollectionCategoryId == dto.Id)
-            .ExecuteDeleteAsync();
-        await _db.CollectionCategoryTranslations.AddRangeAsync(
-            dto.Translations.Select(t => new CollectionCategoryTranslation
+        // FIX: köhnə translations-ları sil, yenilərini əlavə et
+        category.Translations.Clear();
+        foreach (var t in dto.Translations)
+            category.Translations.Add(new CollectionCategoryTranslation
             {
-                CollectionCategoryId = dto.Id,
                 Lang = t.Lang,
-                Name = t.Name
-            }));
+                Name = t.Name,
+                CollectionCategoryId = dto.Id
+            });
 
         _writeRepo.Update(category);
         await _writeRepo.SaveChangesAsync();
@@ -88,6 +83,7 @@ public class CollectionCategoryService : ICollectionCategoryService
 
     public async Task DeleteAsync(int id)
     {
+        // Kolleksiyalarla birlikdə yüklə
         var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
