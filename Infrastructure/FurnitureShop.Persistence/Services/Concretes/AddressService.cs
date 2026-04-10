@@ -48,12 +48,22 @@ public class AddressService : IAddressService
         return _mapper.Map<AddressDto>(address);
     }
 
+    private const int MaxAddressLimit = 5;
+
     public async Task<AddressDto> CreateAsync(string userId, CreateAddressDto dto)
     {
         _log.Information("Yeni ünvan əlavə edilir — UserId: {UserId} Şəhər: {City}", userId, dto.City);
 
         var existing = await _readRepo.GetByUserIdAsync(userId);
         var isFirst  = !existing.Any();
+
+        // ── Biznes məntiq: İstifadəçi maksimum 5 ünvan əlavə edə bilər ──
+        if (existing.Count() >= MaxAddressLimit)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>>
+                {
+                    { "address", new List<string> { ValidationMessages.Get(lang, "AddressLimitReached", MaxAddressLimit) } }
+                });
 
         var address = _mapper.Map<Address>(dto);
         address.UserId = userId;

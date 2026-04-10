@@ -8,6 +8,7 @@ using FurnitureShop.Application.Services.Abstracts;
 using FurnitureShop.Application.Validation;
 using FurnitureShop.Domain.Entities.Concretes;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
+using FurnitureShop.Domain.Entities.Enums;
 using FurnitureShop.Persistence.Datas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -20,6 +21,7 @@ public class ProductService : IProductService
     private readonly IProductReadRepository    _readRepo;
     private readonly ICollectionReadRepository _collectionReadRepo;
     private readonly IProductWriteRepository   _writeRepo;
+    private readonly IOrderReadRepository      _orderReadRepo;
     private readonly ILanguageService          _langService;
     private readonly IMemoryCache              _cache;
     private readonly IMapper                   _mapper;
@@ -33,14 +35,16 @@ public class ProductService : IProductService
         IProductReadRepository    readRepo,
         ICollectionReadRepository collectionReadRepo,
         IProductWriteRepository   writeRepo,
+        IOrderReadRepository      orderReadRepo,
         ILanguageService          langService,
         IMemoryCache              cache,
         IMapper                   mapper,
-        AppDbContext               db)
+        AppDbContext              db)
     {
         _readRepo           = readRepo;
         _collectionReadRepo = collectionReadRepo;
         _writeRepo          = writeRepo;
+        _orderReadRepo      = orderReadRepo;
         _langService        = langService;
         _cache              = cache;
         _mapper             = mapper;
@@ -49,7 +53,7 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetAllAsync(PaginationParams pagination)
     {
-        _log.Information("Bütün məhsullar sorğusu — Səhifə: {Page} Ölçü: {PageSize} Dil: {Lang}", pagination.Page, pagination.PageSize, Lang);
+        _log.Information("Bütün məhsullar sorğusu — Səhifə: {Page} Ölçü: {PageSize}", pagination.Page, pagination.PageSize);
         var products = await _readRepo.GetAllAsync(Lang);
         var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
@@ -86,14 +90,9 @@ public class ProductService : IProductService
         var cacheKey = $"featured_products_{Lang}";
         if (!_cache.TryGetValue(cacheKey, out IEnumerable<ProductDto>? cached))
         {
-            _log.Information("Önə çıxarılmış məhsullar keş-dən tapılmadı, DB-dən yüklənir");
             var products = await _readRepo.GetFeaturedAsync(Lang);
             cached = _mapper.Map<IEnumerable<ProductDto>>(products);
             _cache.Set(cacheKey, cached, CacheExpiry);
-        }
-        else
-        {
-            _log.Information("Önə çıxarılmış məhsullar keş-dən qaytarıldı");
         }
         return cached!;
     }
@@ -103,13 +102,14 @@ public class ProductService : IProductService
         var cacheKey = $"product_{id}_{Lang}";
         if (!_cache.TryGetValue(cacheKey, out ProductDto? cached))
         {
-            _log.Information("Məhsul detalı sorğusu — ProductId: {ProductId}", id);
             var product = await _readRepo.GetDetailAsync(id, Lang);
             if (product is null)
-            {
-                _log.Warning("Məhsul tapılmadı — ProductId: {ProductId}", id);
                 throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
-            }
+
+            // ── Biznes məntiq: Silinmiş məhsul göstərilmir ──────────────
+            if (product.IsDeleted)
+                throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+
             cached = _mapper.Map<ProductDto>(product);
             _cache.Set(cacheKey, cached, CacheExpiry);
         }
@@ -118,16 +118,12 @@ public class ProductService : IProductService
 
     public async Task<ProductDto?> GetByNameAsync(string name)
     {
-        _log.Information("Ad ilə məhsul axtarışı — Ad: {Name}", name);
         var cacheKey = $"product_name_{name}_{Lang}";
         if (!_cache.TryGetValue(cacheKey, out ProductDto? cached))
         {
             var product = await _readRepo.GetByNameAsync(name, Lang);
             if (product is null)
-            {
-                _log.Warning("Ad ilə məhsul tapılmadı — Ad: {Name}", name);
                 throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
-            }
             cached = _mapper.Map<ProductDto>(product);
             _cache.Set(cacheKey, cached, CacheExpiry);
         }
@@ -160,6 +156,15 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetByPriceRangeAsync(decimal min, decimal max, PaginationParams pagination)
     {
+        // ── Biznes məntiq: Qiymət aralığı düzgün olmalıdır ─────────────
+        if (min < 0 || max < 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
+
+        if (min > max)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "price", new List<string> { "Minimum qiymət maksimumdan böyük ola bilməz" } } });
+
         _log.Information("Qiymət aralığına görə məhsullar — Min: {Min} Max: {Max}", min, max);
         var products = await _readRepo.GetByPriceRangeAsync(min, max, Lang);
         var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
@@ -172,7 +177,6 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetByColorAsync(string colorName, PaginationParams pagination)
     {
-        _log.Information("Rəngə görə məhsullar — Rəng: {Color}", colorName);
         var products = await _readRepo.GetByColorAsync(colorName, Lang);
         var paged    = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
@@ -184,10 +188,8 @@ public class ProductService : IProductService
 
     public async Task<IEnumerable<ProductDto>> GetSimilarAsync(int productId)
     {
-        _log.Information("Oxşar məhsullar sorğusu — ProductId: {ProductId}", productId);
         var product = await _readRepo.GetDetailAsync(productId, Lang);
         if (product is null) return Enumerable.Empty<ProductDto>();
-
         var similar = await _readRepo.GetSimilarAsync(productId, product.FurnitureCategoryId, product.Price, product.Material, Lang);
         return _mapper.Map<IEnumerable<ProductDto>>(similar);
     }
@@ -195,6 +197,38 @@ public class ProductService : IProductService
     public async Task<int> CreateAsync(CreateProductDto dto)
     {
         _log.Information("Yeni məhsul yaradılır — Kateqoriya: {CategoryId} Qiymət: {Price}", dto.FurnitureCategoryId, dto.Price);
+
+        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
+        if (dto.Price <= 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
+
+        // ── Biznes məntiq: Stok mənfi ola bilməz ────────────────────────
+        if (dto.Stock < 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "stock", new List<string> { "Stok mənfi ola bilməz" } } });
+
+        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
+        var requiredLangs = new[] { "az", "ru", "en" };
+        var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
+        if (!requiredLangs.All(l => providedLangs.Contains(l)))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(Lang, "AllLangsRequired") } } });
+
+        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
+        if (dto.PriceExtra.HasValue && dto.PriceExtra >= dto.Price)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "priceExtra", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
+
+        // ── Biznes məntiq: Ən azı 1 şəkil lazımdır ──────────────────────
+        if (!dto.ImageUrls.Any())
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "images", new List<string> { ValidationMessages.Get(Lang, "MinCount", "Şəkillər", 1) } } });
+
+        // ── Biznes məntiq: Yalnız 1 əsas şəkil ola bilər ────────────────
+        if (dto.ImageUrls.Count(i => i.IsPrimary) != 1)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "images", new List<string> { "Məhsulun tam olaraq 1 əsas şəkli olmalıdır" } } });
 
         var product = _mapper.Map<Product>(dto);
         product.Translations = dto.Translations.Select(t => _mapper.Map<ProductTranslation>(t)).ToList();
@@ -205,7 +239,7 @@ public class ProductService : IProductService
         await _writeRepo.SaveChangesAsync();
 
         _cache.Remove($"featured_products_{Lang}");
-        _log.Information("Məhsul yaradıldı — ProductId: {ProductId} Qiymət: {Price}", product.Id, product.Price);
+        _log.Information("Məhsul yaradıldı — ProductId: {ProductId}", product.Id);
         return product.Id;
     }
 
@@ -216,6 +250,26 @@ public class ProductService : IProductService
         var product = await _readRepo.GetDetailAsync(dto.Id, "az");
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+
+        // ── Biznes məntiq: Silinmiş məhsul yenilənə bilməz ─────────────
+        if (product.IsDeleted)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "product", new List<string> { ValidationMessages.Get(Lang, "ProductDeleted") } } });
+
+        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
+        if (dto.Price <= 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
+
+        // ── Biznes məntiq: Stok mənfi ola bilməz ────────────────────────
+        if (dto.Stock < 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "stock", new List<string> { "Stok mənfi ola bilməz" } } });
+
+        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
+        if (dto.PriceExtra.HasValue && dto.PriceExtra >= dto.Price)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "priceExtra", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
 
         product.Price               = dto.Price;
         product.PriceExtra          = dto.PriceExtra;
@@ -265,12 +319,28 @@ public class ProductService : IProductService
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-        _writeRepo.Delete(product);
+        // ── Biznes məntiq: Artıq silinmiş məhsul yenidən silinə bilməz ──
+        if (product.IsDeleted)
+            throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
+
+        // ── Biznes məntiq: Aktiv sifarişi olan məhsul silinə bilməz ─────
+        var hasActiveOrders = await _db.OrderItems
+            .AnyAsync(oi => oi.ProductId == id &&
+                      oi.Order.Status != OrderStatus.Cancelled &&
+                      oi.Order.Status != OrderStatus.Delivered);
+
+        if (hasActiveOrders)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "product", new List<string> { ValidationMessages.Get(Lang, "ProductHasActiveOrders") } } });
+
+        // ── Soft delete: fiziki silmək əvəzinə IsDeleted = true ─────────
+        product.IsDeleted = true;
+        _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();
 
         foreach (var lang in new[] { "az", "ru", "en" }) _cache.Remove($"product_{id}_{lang}");
         _cache.Remove($"featured_products_{Lang}");
 
-        _log.Information("Məhsul silindi — ProductId: {ProductId}", id);
+        _log.Information("Məhsul soft-delete edildi — ProductId: {ProductId}", id);
     }
 }

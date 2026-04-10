@@ -12,24 +12,30 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class WishlistService : IWishlistService
 {
-    private readonly IWishlistReadRepository  _readRepo;
-    private readonly IWishlistWriteRepository _writeRepo;
-    private readonly ILanguageService         _langService;
-    private readonly IMapper                  _mapper;
+    private readonly IWishlistReadRepository   _readRepo;
+    private readonly IWishlistWriteRepository  _writeRepo;
+    private readonly IProductReadRepository    _productReadRepo;
+    private readonly ICollectionReadRepository _collectionReadRepo;
+    private readonly ILanguageService          _langService;
+    private readonly IMapper                   _mapper;
     private static readonly ILogger _log = Log.ForContext<WishlistService>();
 
     private string lang => _langService.GetCurrentLanguage();
 
     public WishlistService(
-        IWishlistReadRepository  readRepo,
-        IWishlistWriteRepository writeRepo,
-        ILanguageService         langService,
-        IMapper                  mapper)
+        IWishlistReadRepository   readRepo,
+        IWishlistWriteRepository  writeRepo,
+        IProductReadRepository    productReadRepo,
+        ICollectionReadRepository collectionReadRepo,
+        ILanguageService          langService,
+        IMapper                   mapper)
     {
-        _readRepo    = readRepo;
-        _writeRepo   = writeRepo;
-        _langService = langService;
-        _mapper      = mapper;
+        _readRepo           = readRepo;
+        _writeRepo          = writeRepo;
+        _productReadRepo    = productReadRepo;
+        _collectionReadRepo = collectionReadRepo;
+        _langService        = langService;
+        _mapper             = mapper;
     }
 
     public async Task<WishlistDto> GetAsync(string userId)
@@ -43,6 +49,7 @@ public class WishlistService : IWishlistService
 
     public async Task AddItemAsync(string userId, int? productId, int? collectionId)
     {
+        // ── Biznes məntiq: Məhsul və ya kolleksiya seçilməlidir ──────────
         if (productId is null && collectionId is null)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>
@@ -50,8 +57,23 @@ public class WishlistService : IWishlistService
                     { "item", new List<string> { ValidationMessages.Get(lang, "ProductOrCollectionRequired") } }
                 });
 
-        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        // ── Biznes məntiq: Məhsulun DB-də mövcudluğu yoxlanır ───────────
+        if (productId.HasValue)
+        {
+            var product = await _productReadRepo.GetByIdAsync(productId.Value);
+            if (product is null || product.IsDeleted)
+                throw new NotFoundException(ValidationMessages.Get(lang, "WishlistProductNotFound"));
+        }
 
+        // ── Biznes məntiq: Kolleksiyanın DB-də mövcudluğu yoxlanır ──────
+        if (collectionId.HasValue)
+        {
+            var collection = await _collectionReadRepo.GetByIdAsync(collectionId.Value);
+            if (collection is null || collection.IsDeleted)
+                throw new NotFoundException(ValidationMessages.Get(lang, "WishlistProductNotFound"));
+        }
+
+        var wishlist = await _readRepo.GetByUserIdAsync(userId);
         if (wishlist is null)
         {
             wishlist = new Wishlist { UserId = userId };
@@ -59,15 +81,15 @@ public class WishlistService : IWishlistService
             await _writeRepo.SaveChangesAsync();
         }
 
+        // ── Biznes məntiq: Eyni məhsul iki dəfə əlavə edilə bilməz ──────
         var alreadyExists = wishlist.Items.Any(x =>
             x.ProductId    == productId &&
             x.CollectionId == collectionId);
 
         if (alreadyExists)
         {
-            _log.Information("Məhsul artıq istək siyahısındadır — UserId: {UserId} ProductId: {ProductId} CollectionId: {CollectionId}",
-                userId, productId, collectionId);
-            return;
+            _log.Information("Məhsul artıq istək siyahısındadır — UserId: {UserId} ProductId: {ProductId}", userId, productId);
+            return; // Xəta atmırıq, sadəcə keçirik
         }
 
         wishlist.Items.Add(new WishlistItem
@@ -80,8 +102,7 @@ public class WishlistService : IWishlistService
         _writeRepo.Update(wishlist);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("İstək siyahısına məhsul əlavə edildi — UserId: {UserId} ProductId: {ProductId} CollectionId: {CollectionId}",
-            userId, productId, collectionId);
+        _log.Information("İstək siyahısına məhsul əlavə edildi — UserId: {UserId} ProductId: {ProductId}", userId, productId);
     }
 
     public async Task RemoveItemAsync(string userId, int wishlistItemId)
@@ -98,8 +119,7 @@ public class WishlistService : IWishlistService
         _writeRepo.Update(wishlist);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("İstək siyahısından məhsul silindi — UserId: {UserId} WishlistItemId: {ItemId} ProductId: {ProductId}",
-            userId, wishlistItemId, item.ProductId);
+        _log.Information("İstək siyahısından məhsul silindi — UserId: {UserId} ItemId: {ItemId}", userId, wishlistItemId);
     }
 
     public async Task<bool> IsInWishlistAsync(string userId, int? productId, int? collectionId)

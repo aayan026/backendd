@@ -35,41 +35,26 @@ public class DiscountCodeService : IDiscountCodeService
 
     public async Task<DiscountCodeValidationResult> ValidateAsync(ValidateDiscountCodeDto dto)
     {
-        _log.Information("Endirim kodu yoxlanılır — Kod: {Code} SifarişMəbləği: {OrderTotal}", dto.Code, dto.OrderTotal);
+        _log.Information("Endirim kodu yoxlanılır — Kod: {Code}", dto.Code);
 
         var code = await _readRepo.GetByCodeAsync(dto.Code);
 
         if (code is null || code.Status != DiscountStatus.Active)
-        {
-            _log.Warning("Endirim kodu etibarsızdır — Kod: {Code}", dto.Code);
             return new DiscountCodeValidationResult { IsValid = false, Message = ValidationMessages.Get(Lang, "DiscountCodeNotFound") };
-        }
 
         if (code.ExpiresAt.HasValue && code.ExpiresAt < DateTime.UtcNow)
-        {
-            _log.Warning("Endirim kodu müddəti bitib — Kod: {Code} BitməTarixi: {ExpiresAt}", dto.Code, code.ExpiresAt);
             return new DiscountCodeValidationResult { IsValid = false, Message = ValidationMessages.Get(Lang, "DiscountCodeExpired") };
-        }
 
         if (code.MaxUses.HasValue && code.UsedCount >= code.MaxUses)
-        {
-            _log.Warning("Endirim kodu istifadə limiti dolub — Kod: {Code} Limit: {MaxUses}", dto.Code, code.MaxUses);
             return new DiscountCodeValidationResult { IsValid = false, Message = ValidationMessages.Get(Lang, "DiscountCodeUsedUp") };
-        }
 
         if (code.MinOrderAmount.HasValue && dto.OrderTotal < code.MinOrderAmount)
-        {
-            _log.Warning("Endirim kodu üçün minimum məbləğ çatmır — Kod: {Code} MinMəbləğ: {Min} SifarişMəbləği: {Total}", dto.Code, code.MinOrderAmount, dto.OrderTotal);
             return new DiscountCodeValidationResult { IsValid = false, Message = ValidationMessages.Get(Lang, "DiscountCodeMinAmount", code.MinOrderAmount) };
-        }
 
         var discount = code.Type == DiscountType.Percent
             ? dto.OrderTotal * code.Value / 100
             : code.Value;
         discount = Math.Min(discount, dto.OrderTotal);
-
-        _log.Information("Endirim kodu qəbul edildi — Kod: {Code} EndiriMəbləği: {Discount} YekünMəbləğ: {Final}",
-            dto.Code, discount, dto.OrderTotal - discount);
 
         return new DiscountCodeValidationResult
         {
@@ -96,11 +81,34 @@ public class DiscountCodeService : IDiscountCodeService
 
     public async Task<int> CreateAsync(CreateDiscountCodeDto dto)
     {
-        _log.Information("Yeni endirim kodu yaradılır — Kod: {Code} Növ: {Type} Dəyər: {Value}", dto.Code, dto.Type, dto.Value);
+        _log.Information("Yeni endirim kodu yaradılır — Kod: {Code}", dto.Code);
+
+        // ── Biznes məntiq: Eyni kod iki dəfə yaradıla bilməz ────────────
+        var existing = await _readRepo.GetByCodeAsync(dto.Code);
+        if (existing is not null)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeDuplicate") } } });
+
+        // ── Biznes məntiq: Faiz endirimi 1-100 arasında olmalıdır ────────
+        if (dto.Type == DiscountType.Percent && (dto.Value < 1 || dto.Value > 100))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "value", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeInvalidValue") } } });
+
+        // ── Biznes məntiq: Sabit endirim mənfi ola bilməz ────────────────
+        if (dto.Value <= 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "value", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Endirim dəyəri") } } });
+
+        // ── Biznes məntiq: Bitiş tarixi gələcək olmalıdır ────────────────
+        if (dto.ExpiresAt.HasValue && dto.ExpiresAt <= DateTime.UtcNow)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "expiresAt", new List<string> { ValidationMessages.Get(Lang, "FutureDate", "Bitiş tarixi") } } });
+
         var code = _mapper.Map<DiscountCode>(dto);
         code.Status = DiscountStatus.Active;
         await _writeRepo.AddAsync(code);
         await _writeRepo.SaveChangesAsync();
+
         _log.Information("Endirim kodu yaradıldı — Id: {Id} Kod: {Code}", code.Id, code.Code);
         return code.Id;
     }
@@ -108,19 +116,33 @@ public class DiscountCodeService : IDiscountCodeService
     public async Task DeactivateAsync(int id)
     {
         var code = await _readRepo.GetByIdAsync(id);
-        if (code is null) throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
+        if (code is null)
+            throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
+
+        // ── Biznes məntiq: Artıq deaktiv olan kod yenidən deaktiv edilə bilməz ──
+        if (code.Status == DiscountStatus.Passive)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeAlreadyInactive") } } });
+
         code.Status = DiscountStatus.Passive;
         _writeRepo.Update(code);
         await _writeRepo.SaveChangesAsync();
-        _log.Information("Endirim kodu deaktiv edildi — Id: {Id} Kod: {Code}", id, code.Code);
+        _log.Information("Endirim kodu deaktiv edildi — Id: {Id}", id);
     }
 
     public async Task DeleteAsync(int id)
     {
         var code = await _readRepo.GetByIdAsync(id);
-        if (code is null) throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
+        if (code is null)
+            throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
+
+        // ── Biznes məntiq: İstifadə edilmiş kod silinə bilməz ───────────
+        if (code.UsedCount > 0)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeHasBeenUsed") } } });
+
         await _writeRepo.RemoveAsync(code);
         await _writeRepo.SaveChangesAsync();
-        _log.Information("Endirim kodu silindi — Id: {Id} Kod: {Code}", id, code.Code);
+        _log.Information("Endirim kodu silindi — Id: {Id}", id);
     }
 }

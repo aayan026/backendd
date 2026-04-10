@@ -35,29 +35,44 @@ public class CampaignService : ICampaignService
     }
 
     public async Task<IEnumerable<CampaignDto>> GetActiveAsync()
-    {
-        _log.Information("Aktiv kampaniyalar sorğusu");
-        return _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetActiveAsync(lang));
-    }
+        => _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetActiveAsync(lang));
 
     public async Task<IEnumerable<CampaignDto>> GetAllAsync()
-    {
-        _log.Information("Bütün kampaniyalar sorğusu");
-        return _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetAllWithTranslationsAsync(lang));
-    }
+        => _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetAllWithTranslationsAsync(lang));
 
     public async Task<int> CreateAsync(CreateCampaignDto dto)
     {
-        _log.Information("Yeni kampaniya yaradılır — Endirim: {Discount}%", dto.DiscountPercent);
+        _log.Information("Yeni kampaniya yaradılır");
+
+        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
+        var requiredLangs = new[] { "az", "ru", "en" };
+        var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
+        if (!requiredLangs.All(l => providedLangs.Contains(l)))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(lang, "AllLangsRequired") } } });
+
+        // ── Biznes məntiq: Endirim faizi 1-100 arasında olmalıdır ────────
+        if (dto.DiscountPercent.HasValue && (dto.DiscountPercent < 1 || dto.DiscountPercent > 100))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "discountPercent", new List<string> { ValidationMessages.Get(lang, "DiscountCodeInvalidValue") } } });
+
+        // ── Biznes məntiq: Bitiş tarixi başlama tarixindən sonra olmalıdır ──
+        if (dto.StartDate != default && dto.EndDate != default && dto.EndDate <= dto.StartDate)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "endDate", new List<string> { ValidationMessages.Get(lang, "CampaignDateInvalid") } } });
+
+        // ── Biznes məntiq: Başlama tarixi gələcəkdə olmalıdır ────────────
+        if (dto.StartDate != default && dto.StartDate < DateTime.UtcNow.Date)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "startDate", new List<string> { ValidationMessages.Get(lang, "FutureDate", "Başlama tarixi") } } });
+
         var campaign = _mapper.Map<Campaign>(dto);
         campaign.IsActive = true;
         campaign.Translations = dto.Translations.Select(t => new CampaignTranslation
         {
-            Lang        = t.Lang,
-            Title       = t.Title,
-            Description = t.Description,
-            ButtonText  = t.ButtonText
+            Lang = t.Lang, Title = t.Title, Description = t.Description, ButtonText = t.ButtonText
         }).ToList();
+
         await _writeRepo.AddAsync(campaign);
         await _writeRepo.SaveChangesAsync();
         _log.Information("Kampaniya yaradıldı — CampaignId: {CampaignId}", campaign.Id);
@@ -67,6 +82,7 @@ public class CampaignService : ICampaignService
     public async Task UpdateAsync(int id, CreateCampaignDto dto)
     {
         _log.Information("Kampaniya yenilənir — CampaignId: {CampaignId}", id);
+
         var campaign = await _readRepo.GetAll()
             .Include(c => c.Translations)
             .FirstOrDefaultAsync(c => c.Id == id);
@@ -74,12 +90,24 @@ public class CampaignService : ICampaignService
         if (campaign is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CampaignNotFound"));
 
-        campaign.ImageUrl       = dto.ImageUrl       ?? campaign.ImageUrl;
-        campaign.ButtonLink     = dto.ButtonLink     ?? campaign.ButtonLink;
+        // ── Biznes məntiq: Endirim faizi 1-100 arasında olmalıdır ────────
+        if (dto.DiscountPercent.HasValue && (dto.DiscountPercent < 1 || dto.DiscountPercent > 100))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "discountPercent", new List<string> { ValidationMessages.Get(lang, "DiscountCodeInvalidValue") } } });
+
+        // ── Biznes məntiq: Bitiş tarixi başlama tarixindən sonra olmalıdır ──
+        var newStart = dto.StartDate != default ? dto.StartDate : campaign.StartDate;
+        var newEnd   = dto.EndDate   != default ? dto.EndDate   : campaign.EndDate;
+        if (newStart != default && newEnd != default && newEnd <= newStart)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "endDate", new List<string> { ValidationMessages.Get(lang, "CampaignDateInvalid") } } });
+
+        campaign.ImageUrl        = dto.ImageUrl        ?? campaign.ImageUrl;
+        campaign.ButtonLink      = dto.ButtonLink      ?? campaign.ButtonLink;
         campaign.DiscountPercent = dto.DiscountPercent ?? campaign.DiscountPercent;
-        campaign.StartDate      = dto.StartDate != default ? dto.StartDate : campaign.StartDate;
-        campaign.EndDate        = dto.EndDate   != default ? dto.EndDate   : campaign.EndDate;
-        campaign.DisplayOrder   = dto.DisplayOrder;
+        campaign.StartDate       = newStart;
+        campaign.EndDate         = newEnd;
+        campaign.DisplayOrder    = dto.DisplayOrder;
 
         foreach (var t in dto.Translations)
         {
@@ -90,7 +118,10 @@ public class CampaignService : ICampaignService
             }
             else
             {
-                campaign.Translations.Add(new CampaignTranslation { Lang = t.Lang, Title = t.Title, Description = t.Description, ButtonText = t.ButtonText });
+                campaign.Translations.Add(new CampaignTranslation
+                {
+                    Lang = t.Lang, Title = t.Title, Description = t.Description, ButtonText = t.ButtonText
+                });
             }
         }
 
@@ -116,6 +147,13 @@ public class CampaignService : ICampaignService
         var campaign = await _readRepo.GetByIdAsync(id);
         if (campaign is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CampaignNotFound"));
+
+        // ── Biznes məntiq: Aktiv kampaniya birbaşa silinə bilməz, əvvəl deaktiv edilməlidir ──
+        if (campaign.IsActive)
+        {
+            campaign.IsActive = false;
+            _writeRepo.Update(campaign);
+        }
 
         _writeRepo.Delete(campaign);
         await _writeRepo.SaveChangesAsync();

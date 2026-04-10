@@ -34,14 +34,10 @@ public class CollectionCategoryService : ICollectionCategoryService
     }
 
     public async Task<IEnumerable<CollectionCategoryDto>> GetAllAsync()
-    {
-        _log.Information("Bütün kolleksiya kateqoriyaları sorğusu");
-        return _mapper.Map<IEnumerable<CollectionCategoryDto>>(await _readRepo.GetAllWithTranslationsAsync(Lang));
-    }
+        => _mapper.Map<IEnumerable<CollectionCategoryDto>>(await _readRepo.GetAllWithTranslationsAsync(Lang));
 
     public async Task<CollectionCategoryDto?> GetByIdAsync(int id)
     {
-        _log.Information("Kolleksiya kateqoriyası sorğusu — CategoryId: {CategoryId}", id);
         var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
@@ -51,6 +47,14 @@ public class CollectionCategoryService : ICollectionCategoryService
     public async Task<int> CreateAsync(CreateCollectionCategoryDto dto)
     {
         _log.Information("Yeni kolleksiya kateqoriyası yaradılır");
+
+        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
+        var requiredLangs = new[] { "az", "ru", "en" };
+        var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
+        if (!requiredLangs.All(l => providedLangs.Contains(l)))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(Lang, "AllLangsRequired") } } });
+
         var category = new CollectionCategory
         {
             ImageUrl     = dto.ImageUrl ?? null,
@@ -60,6 +64,7 @@ public class CollectionCategoryService : ICollectionCategoryService
         };
         await _writeRepo.AddAsync(category);
         await _writeRepo.SaveChangesAsync();
+
         _log.Information("Kolleksiya kateqoriyası yaradıldı — CategoryId: {CategoryId}", category.Id);
         return category.Id;
     }
@@ -67,9 +72,17 @@ public class CollectionCategoryService : ICollectionCategoryService
     public async Task UpdateAsync(UpdateCollectionCategoryDto dto)
     {
         _log.Information("Kolleksiya kateqoriyası yenilənir — CategoryId: {CategoryId}", dto.Id);
+
         var category = await _readRepo.GetWithCollectionsAsync(dto.Id, "az");
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
+
+        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
+        var requiredLangs = new[] { "az", "ru", "en" };
+        var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
+        if (!requiredLangs.All(l => providedLangs.Contains(l)))
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(Lang, "AllLangsRequired") } } });
 
         category.ImageUrl = dto.ImageUrl ?? category.ImageUrl;
         category.Translations.Clear();
@@ -87,16 +100,16 @@ public class CollectionCategoryService : ICollectionCategoryService
     public async Task DeleteAsync(int id)
     {
         _log.Information("Kolleksiya kateqoriyası silinir — CategoryId: {CategoryId}", id);
+
         var category = await _readRepo.GetWithCollectionsAsync(id, Lang);
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
 
-        if (category.Collections != null)
-        {
-            foreach (var col in category.Collections)
-                col.IsDeleted = true;
-            _log.Information("Kateqoriyaya aid kolleksiyalar soft-delete edildi — CategoryId: {CategoryId} Sayı: {Count}", id, category.Collections.Count());
-        }
+        // ── Biznes məntiq: İçində aktiv kolleksiyalar olan kateqoriya silinə bilməz ──
+        var activeCollections = category.Collections?.Where(c => !c.IsDeleted).ToList();
+        if (activeCollections is not null && activeCollections.Any())
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>> { { "category", new List<string> { ValidationMessages.Get(Lang, "CollectionCategoryHasCollections") } } });
 
         _writeRepo.Delete(category);
         await _writeRepo.SaveChangesAsync();

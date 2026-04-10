@@ -268,11 +268,39 @@ public class OrderService : IOrderService
                     { "order", new List<string> { ValidationMessages.Get(Lang, "OrderAlreadyDelivered") } }
                 });
 
+        // ── Biznes məntiq: Yalnız admin Confirmed/InProgress sifarişi ləğv edə bilər ──
+        if (!isAdmin && order.Status == OrderStatus.Confirmed)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>>
+                {
+                    { "order", new List<string> { ValidationMessages.Get(Lang, "OrderAlreadyConfirmed") } }
+                });
+
+        if (!isAdmin && order.Status == OrderStatus.InProgress)
+            throw new Application.Exceptions.ValidationException(
+                new Dictionary<string, List<string>>
+                {
+                    { "order", new List<string> { ValidationMessages.Get(Lang, "OrderAlreadyInProgress") } }
+                });
+
         order.Status = OrderStatus.Cancelled;
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Sifariş ləğv edildi — OrderId: {OrderId}", id);
+        // ── Biznes məntiq: Sifariş ləğv edildikdə stok geri qaytarılır ──
+        foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
+        {
+            var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
+            if (product is not null)
+            {
+                product.Stock += item.Quantity;
+                _productWriteRepo.Update(product);
+            }
+        }
+        if (order.Items.Any(i => i.ProductId.HasValue))
+            await _productWriteRepo.SaveChangesAsync();
+
+        _log.Information("Sifariş ləğv edildi, stok geri qaytarıldı — OrderId: {OrderId}", id);
         return ValidationMessages.Get(Lang, "OrderCancelled");
     }
 
