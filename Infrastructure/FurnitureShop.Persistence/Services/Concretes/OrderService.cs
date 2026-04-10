@@ -261,7 +261,6 @@ public class OrderService : IOrderService
                             capturedOrderId, capturedTotal, capturedLang);
                     }
 
-                    // Adminə bildiriş
                     var payMethodLabel = capturedMethod switch
                     {
                         PaymentMethod.CashOnDelivery => "Nağd",
