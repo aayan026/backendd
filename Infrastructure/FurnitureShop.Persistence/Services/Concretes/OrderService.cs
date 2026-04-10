@@ -100,10 +100,6 @@ public class OrderService : IOrderService
         _log.Information("Yeni sifariş yaradılır — UserId: {UserId} MəhsulSayı: {ItemCount}",
             userId, dto.Items?.Count ?? 0);
 
-        // ══════════════════════════════════════════════════════════════════════
-        // DB TRANSACTION — order yarat + stock azalt eyni əməliyyatda olur.
-        // Biri uğursuz olarsa hər ikisi geri döndürülür.
-        // ══════════════════════════════════════════════════════════════════════
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -117,9 +113,9 @@ public class OrderService : IOrderService
 
             decimal discountAmount = 0;
             decimal subtotal       = 0;
-            var itemPrices = new Dictionary<int, (decimal Price, int Stock)>();
+            var itemPrices = new Dictionary<int, decimal>();
 
-            // ── 1. Məhsulları yoxla, subtotal hesabla ───────────────────
+            // ── 1. Stok yoxla, subtotal hesabla ─────────────────────────
             foreach (var item in dto.Items)
             {
                 if (item.ProductId.HasValue)
@@ -127,13 +123,16 @@ public class OrderService : IOrderService
                     var product = await _productReadRepo.GetByIdAsync(item.ProductId.Value);
                     if (product is null)
                         throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
-                    if (product.Stock < item.Quantity)
+
+                    // Custom sifariş isə stok tələbi yoxdur — sıfırdan hazırlanır
+                    if (!dto.IsCustomOrder && product.Stock < item.Quantity)
                         throw new Application.Exceptions.ValidationException(
                             new Dictionary<string, List<string>>
                             {
                                 { "stock", new List<string> { $"'{product.Translations.FirstOrDefault()?.Name ?? "Məhsul"}' üçün kifayət qədər stok yoxdur. Mövcud: {product.Stock}" } }
                             });
-                    itemPrices[item.ProductId.Value] = (product.Price, product.Stock);
+
+                    itemPrices[item.ProductId.Value] = product.Price;
                     subtotal += product.Price * item.Quantity;
                 }
                 else if (item.CollectionId.HasValue)
@@ -175,7 +174,6 @@ public class OrderService : IOrderService
 
                 discount.UsedCount++;
                 _discountWriteRepo.Update(discount);
-                _log.Information("Endirim kodu tətbiq edildi — DiscountCodeId: {Id} Endirim: {Amount}", discount.Id, discountAmount);
             }
 
             // ── 3. Çatdırılma qiyməti ────────────────────────────────────
@@ -188,8 +186,8 @@ public class OrderService : IOrderService
             // ── 4. UnitPrice saxla ───────────────────────────────────────
             foreach (var orderItem in order.Items)
             {
-                if (orderItem.ProductId.HasValue && itemPrices.TryGetValue(orderItem.ProductId.Value, out var info))
-                    orderItem.UnitPrice = info.Price;
+                if (orderItem.ProductId.HasValue && itemPrices.TryGetValue(orderItem.ProductId.Value, out var price))
+                    orderItem.UnitPrice = price;
                 else if (orderItem.CollectionId.HasValue)
                 {
                     var col = await _collectionReadRepo.GetByIdAsync(orderItem.CollectionId.Value);
@@ -200,28 +198,29 @@ public class OrderService : IOrderService
             await _writeRepo.AddAsync(order);
             await _writeRepo.SaveChangesAsync();
 
-            // ── 5. Stok azalt — optimistic concurrency ilə ──────────────
-            foreach (var item in dto.Items.Where(i => i.ProductId.HasValue))
+            // ── 5. Stok azalt — yalnız standart sifarişdə ────────────────
+            if (!dto.IsCustomOrder)
             {
-                var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
-                if (product is not null)
+                foreach (var item in dto.Items.Where(i => i.ProductId.HasValue))
                 {
-                    product.Stock -= item.Quantity;
-                    _productWriteRepo.Update(product);
+                    var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
+                    if (product is not null)
+                    {
+                        product.Stock -= item.Quantity;
+                        _productWriteRepo.Update(product);
+                    }
                 }
-            }
-
-            try
-            {
-                await _productWriteRepo.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                // Eyni anda başqa biri eyni məhsulu aldı — istifadəçiyə aydın xəta
-                _log.Warning("Stok race condition — OrderId: {OrderId} UserId: {UserId}", order.Id, userId);
-                throw new Application.Exceptions.ValidationException(
-                    new Dictionary<string, List<string>> { { "stock",
-                        new List<string> { "Stok məlumatı dəyişdi, zəhmət olmasa yenidən cəhd edin" } } });
+                try
+                {
+                    await _productWriteRepo.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    _log.Warning("Stok race condition — OrderId: {OrderId} UserId: {UserId}", order.Id, userId);
+                    throw new Application.Exceptions.ValidationException(
+                        new Dictionary<string, List<string>> { { "stock",
+                            new List<string> { "Stok məlumatı dəyişdi, zəhmət olmasa yenidən cəhd edin" } } });
+                }
             }
 
             // ── 6. Cart-ı təmizlə ────────────────────────────────────────
@@ -233,48 +232,56 @@ public class OrderService : IOrderService
                 await _cartWriteRepo.SaveChangesAsync();
             }
 
-            // ── COMMIT ──────────────────────────────────────────────────
             await transaction.CommitAsync();
 
-            _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} TotalPrice: {TotalPrice}",
-                order.Id, order.TotalPrice);
+            _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} TotalPrice: {TotalPrice} IsCustom: {IsCustom}",
+                order.Id, order.TotalPrice, order.IsCustomOrder);
 
-            // ── 7. Email — fire-and-forget (request pipeline-i bloklamır) ─
-            // Task.Run ilə background-da işlənir, xəta olsa loglanır
-            var capturedOrderId    = order.Id;
-            var capturedTotal      = order.TotalPrice;
-            var capturedLang       = Lang;
-            var capturedMethod     = order.PaymentMethod;
-            var capturedNote       = order.Note;
+            // ── 7. Email bildirişləri — fire-and-forget ─────────────────
+            var capturedOrderId       = order.Id;
+            var capturedTotal         = order.TotalPrice;
+            var capturedLang          = Lang;
+            var capturedMethod        = order.PaymentMethod;
+            var capturedNote          = order.Note;
+            var capturedIsCustom      = order.IsCustomOrder;
+            var capturedCustomDesc    = order.CustomDescription;
 
             _ = Task.Run(async () =>
             {
                 try
                 {
                     var userEntity = await _userManager.FindByIdAsync(userId);
+
+                    // Müştəriyə təsdiq emaili
                     if (userEntity?.Email is not null)
                     {
                         await _emailService.SendOrderConfirmationAsync(
-                            userEntity.Email, $"{userEntity.Name} {userEntity.Surname}",
+                            userEntity.Email,
+                            $"{userEntity.Name} {userEntity.Surname}",
                             capturedOrderId, capturedTotal, capturedLang);
                     }
 
+                    // Adminə bildiriş
                     var payMethodLabel = capturedMethod switch
                     {
                         PaymentMethod.CashOnDelivery => "Nağd",
                         PaymentMethod.Card           => "Kart",
                         PaymentMethod.BankTransfer   => "Bank köçürməsi",
+                        PaymentMethod.Installment    => "Kredit/Taksit",
+                        PaymentMethod.PartialCard    => "İlkin ödəniş + qalan nağd",
                         _                            => capturedMethod.ToString()
                     };
 
-                    var userForEmail = await _userManager.FindByIdAsync(userId);
                     await _emailService.SendAdminOrderNotificationAsync(
                         capturedOrderId,
-                        userForEmail is not null ? $"{userForEmail.Name} {userForEmail.Surname}" : "—",
-                        userForEmail?.Email ?? "—",
+                        userEntity is not null ? $"{userEntity.Name} {userEntity.Surname}" : "—",
+                        userEntity?.Email ?? "—",
+                        userEntity?.PhoneNumber ?? "—",
                         capturedTotal,
                         payMethodLabel,
                         capturedNote ?? "—",
+                        capturedIsCustom,
+                        capturedCustomDesc,
                         capturedLang);
                 }
                 catch (Exception ex)
@@ -304,10 +311,7 @@ public class OrderService : IOrderService
         var isAdmin = user is not null && await _userManager.IsInRoleAsync(user, "Admin");
 
         if (!isAdmin && order.UserId != userId)
-        {
-            _log.Warning("Sifariş ləğvinə icazəsiz cəhd — OrderId: {OrderId} UserId: {UserId}", id, userId);
             throw new ForbiddenException(ValidationMessages.Get(Lang, "OrderCancelForbidden"));
-        }
 
         if (order.Status == OrderStatus.Cancelled)
             throw new Application.Exceptions.ValidationException(
@@ -329,7 +333,6 @@ public class OrderService : IOrderService
                 new Dictionary<string, List<string>> { { "order",
                     new List<string> { ValidationMessages.Get(Lang, "OrderAlreadyInProgress") } } });
 
-        // Ləğv + stok geri qaytarma da transaction içində
         using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
@@ -337,18 +340,21 @@ public class OrderService : IOrderService
             _writeRepo.Update(order);
             await _writeRepo.SaveChangesAsync();
 
-            foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
+            // Stok geri qaytarma yalnız standart sifarişdə
+            if (!order.IsCustomOrder)
             {
-                var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
-                if (product is not null)
+                foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
                 {
-                    product.Stock += item.Quantity;
-                    _productWriteRepo.Update(product);
+                    var product = await _productReadRepo.GetByIdAsync(item.ProductId!.Value);
+                    if (product is not null)
+                    {
+                        product.Stock += item.Quantity;
+                        _productWriteRepo.Update(product);
+                    }
                 }
+                if (order.Items.Any(i => i.ProductId.HasValue))
+                    await _productWriteRepo.SaveChangesAsync();
             }
-
-            if (order.Items.Any(i => i.ProductId.HasValue))
-                await _productWriteRepo.SaveChangesAsync();
 
             await transaction.CommitAsync();
         }
@@ -358,7 +364,7 @@ public class OrderService : IOrderService
             throw;
         }
 
-        _log.Information("Sifariş ləğv edildi, stok geri qaytarıldı — OrderId: {OrderId}", id);
+        _log.Information("Sifariş ləğv edildi — OrderId: {OrderId}", id);
         return ValidationMessages.Get(Lang, "OrderCancelled");
     }
 
@@ -392,32 +398,49 @@ public class OrderService : IOrderService
         };
     }
 
-    public async Task UpdateStatusAsync(int id, OrderStatus status)
+    public async Task UpdateStatusAsync(int id, UpdateOrderStatusDto dto)
     {
         var order = await _readRepo.GetWithDetailsAsync(id);
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        order.Status = status;
+        order.Status = dto.Status;
+
+        // Admin qeyd və ya təxmini çatdırılma tarixi yazıbsa saxla
+        if (dto.AdminNote is not null)
+            order.AdminNote = dto.AdminNote;
+
+        if (dto.EstimatedDeliveryDate.HasValue)
+            order.EstimatedDeliveryDate = dto.EstimatedDeliveryDate;
+
         _writeRepo.Update(order);
         await _writeRepo.SaveChangesAsync();
 
-        _log.Information("Sifariş statusu dəyişdirildi — OrderId: {OrderId} YeniStatus: {Status}", id, status);
+        _log.Information("Sifariş statusu dəyişdirildi — OrderId: {OrderId} Status: {Status} AdminNote: {Note}",
+            id, dto.Status, dto.AdminNote);
 
-        if (order.User is not null)
+        // Status email — fire-and-forget
+        if (order.User?.Email is not null)
         {
-            // Fire-and-forget — status email-i de pipeline-i bloklamasın
-            var capturedUser   = order.User;
-            var capturedId     = order.Id;
-            var capturedStatus = status;
-            var capturedLang   = Lang;
+            var capturedUser     = order.User;
+            var capturedId       = order.Id;
+            var capturedStatus   = dto.Status;
+            var capturedNote     = dto.AdminNote;
+            var capturedDelivery = dto.EstimatedDeliveryDate;
+            var capturedLang     = Lang;
+
             _ = Task.Run(async () =>
             {
                 try
                 {
                     await _emailService.SendOrderStatusChangedAsync(
-                        capturedUser.Email!, $"{capturedUser.Name} {capturedUser.Surname}",
-                        capturedId, capturedStatus.ToString(), capturedLang);
+                        capturedUser.Email!,
+                        $"{capturedUser.Name} {capturedUser.Surname}",
+                        capturedId,
+                        capturedStatus.ToString(),
+                        capturedNote,
+                        capturedDelivery,
+                        capturedLang);
                 }
                 catch (Exception ex)
                 {
@@ -432,10 +455,9 @@ public class OrderService : IOrderService
         var order = await _readRepo.GetByIdAsync(orderId);
         if (order is null) return;
 
-        // Idempotency — artıq ödənilibsə ikinci dəfə işləmə
         if (order.PaymentStatus == PaymentStatus.Paid)
         {
-            _log.Information("MarkPaymentPaid — artıq ödənilib, keçilir — OrderId: {OrderId}", orderId);
+            _log.Information("MarkPaymentPaid — artıq ödənilib — OrderId: {OrderId}", orderId);
             return;
         }
 
@@ -453,7 +475,6 @@ public class OrderService : IOrderService
         var order = await _readRepo.GetByIdAsync(orderId);
         if (order is null) return;
 
-        // Artıq ödənilmiş sifarişin statusunu Failed-ə çəkmə
         if (order.PaymentStatus == PaymentStatus.Paid)
         {
             _log.Warning("MarkPaymentFailed — artıq ödənilib, dəyişdirilmir — OrderId: {OrderId}", orderId);

@@ -38,8 +38,4 @@
 		<Folder Include="wwwroot\" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<None Include="FurnitureShop.API.csproj" />
-	</ItemGroup>
-
 </Project>

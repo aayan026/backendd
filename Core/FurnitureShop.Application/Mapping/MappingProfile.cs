@@ -135,16 +135,27 @@ public class MappingProfile : Profile
         CreateMap<Order, OrderDto>()
             .ForMember(d => d.UserFullName, o => o.MapFrom(s =>
                 s.User != null ? $"{s.User.Name} {s.User.Surname}" : ""))
+            .ForMember(d => d.UserPhone, o => o.MapFrom(s =>
+                s.User != null ? s.User.PhoneNumber : null))
+            .ForMember(d => d.UserEmail, o => o.MapFrom(s =>
+                s.User != null ? s.User.Email : null))
             .ForMember(d => d.DiscountCode, o => o.MapFrom(s =>
                 s.DiscountCode != null ? s.DiscountCode.Code : null))
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items))
             .ForMember(d => d.DeliveryInfo, o => o.MapFrom(s => s.DeliveryInfo));
 
-        CreateMap<CreateDeliveryInfoDto, DeliveryInfo>();
+        CreateMap<CreateDeliveryInfoDto, DeliveryInfo>()
+            .ForMember(d => d.ScheduledDate, o => o.MapFrom(s => s.ScheduledDate))
+            .ForMember(d => d.TimeSlot, o => o.MapFrom(s => s.TimeSlot));
         CreateMap<CreateOrderItemDto, OrderItem>();
         CreateMap<CreateOrderDto, Order>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items))
             .ForMember(d => d.TotalPrice, o => o.MapFrom(s => s.TotalPrice))
+            .ForMember(d => d.IsCustomOrder, o => o.MapFrom(s => s.IsCustomOrder))
+            .ForMember(d => d.CustomDescription, o => o.MapFrom(s => s.CustomDescription))
+            .ForMember(d => d.PaidAmount, o => o.MapFrom(s => s.PaidAmount))
+            .ForMember(d => d.InstallmentMonths, o => o.MapFrom(s => s.InstallmentMonths))
+            .ForMember(d => d.MonthlyPayment, o => o.MapFrom(s => s.MonthlyPayment))
             .ForMember(d => d.DeliveryInfo, o => o.Ignore());
 
         // ── Address ───────────────────────────────────────────────────────

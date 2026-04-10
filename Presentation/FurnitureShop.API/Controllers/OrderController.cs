@@ -80,7 +80,7 @@ public class OrderController : BaseApiController
     [HttpPut("admin/{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateOrderStatusDto dto)
     {
-        await _service.UpdateStatusAsync(id, dto.Status);
+        await _service.UpdateStatusAsync(id, dto);
         return UpdatedResponse();
     }
 

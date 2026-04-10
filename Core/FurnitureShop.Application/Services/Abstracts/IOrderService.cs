@@ -16,7 +16,7 @@ public interface IOrderService
     Task<PagedList<OrderDto>> GetAllAsync(PaginationParams pagination);
     Task<PagedList<OrderDto>> GetByStatusAsync(OrderStatus status, PaginationParams pagination);
     Task<PagedList<OrderDto>> GetByDateRangeAsync(DateTime from, DateTime to, PaginationParams pagination);
-    Task UpdateStatusAsync(int id, OrderStatus status);
+    Task UpdateStatusAsync(int id, UpdateOrderStatusDto dto);
 
     // Payment
     Task MarkPaymentPaidAsync(int orderId);
