@@ -49,25 +49,30 @@ public class AuthService : IAuthService
 
         if (await _userManager.IsLockedOutAsync(user))
         {
-            _log.Warning("Login uğursuz — Hesab kilidlənib — UserId: {UserId} Email: {Email}", user.Id, dto.Email);
+            _log.Warning("Login uğursuz — Hesab kilidlənib — UserId: {UserId}", user.Id);
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "AccountLocked"));
         }
 
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
         if (!isPasswordValid)
         {
-            _log.Warning("Login uğursuz — Yanlış şifrə — UserId: {UserId} Email: {Email}", user.Id, dto.Email);
+            // Uğursuz cəhdi qeydə al — 5 cəhddən sonra hesab kilidlənir (Identity konfiqurасiyası)
+            await _userManager.AccessFailedAsync(user);
+            _log.Warning("Login uğursuz — Yanlış şifrə — UserId: {UserId}", user.Id);
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "InvalidCredentials"));
         }
 
+        // Uğurlu girişdə sayacı sıfırla
+        await _userManager.ResetAccessFailedCountAsync(user);
+
         var result = await CreateTokenAndSaveAsync(user);
-        _log.Information("Login uğurlu — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+        _log.Information("Login uğurlu — UserId: {UserId}", user.Id);
         return result;
     }
 
     public async Task<TokenResponseDto> RegisterAsync(RegisterDto dto)
     {
-        _log.Information("Qeydiyyat cəhdi — Email: {Email} Ad: {Name} {Surname}", dto.Email, dto.Name, dto.Surname);
+        _log.Information("Qeydiyyat cəhdi — Email: {Email}", dto.Email);
 
         var user = new AppUser
         {
@@ -87,13 +92,13 @@ public class AuthService : IAuthService
                     g => g.Key,
                     g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
 
-            _log.Warning("Qeydiyyat uğursuz — Email: {Email} — Xətalar: {Errors}", dto.Email, errors);
+            _log.Warning("Qeydiyyat uğursuz — Email: {Email}", dto.Email);
             throw new Application.Exceptions.ValidationException(errors);
         }
 
         await _userManager.AddToRoleAsync(user, "Customer");
         var tokenResult = await CreateTokenAndSaveAsync(user);
-        _log.Information("Qeydiyyat uğurlu — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+        _log.Information("Qeydiyyat uğurlu — UserId: {UserId}", user.Id);
         return tokenResult;
     }
 
@@ -143,12 +148,12 @@ public class AuthService : IAuthService
                     .ToDictionary(
                         g => g.Key,
                         g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
-                _log.Warning("Google login — İstifadəçi yaradılarkən xəta — Email: {Email} Xətalar: {Errors}", payload.Email, errors);
+                _log.Warning("Google login — İstifadəçi yaradılarkən xəta — Email: {Email}", payload.Email);
                 throw new Application.Exceptions.ValidationException(errors);
             }
 
             await _userManager.AddToRoleAsync(user, "Customer");
-            _log.Information("Google login — Yeni istifadəçi yaradıldı — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+            _log.Information("Google login — Yeni istifadəçi — UserId: {UserId}", user.Id);
         }
         else
         {
@@ -160,14 +165,17 @@ public class AuthService : IAuthService
         }
 
         var tokenResult = await CreateTokenAndSaveAsync(user);
-        _log.Information("Google login uğurlu — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+        _log.Information("Google login uğurlu — UserId: {UserId}", user.Id);
         return tokenResult;
     }
 
     public async Task<TokenResponseDto> RefreshTokenAsync(TokenResponseDto request)
     {
+        // DB-dəki hash ilə müqayisə et
+        var incomingHash = AppUser.HashRefreshToken(request.RefreshToken);
+
         var user = await _userManager.Users
-            .FirstOrDefaultAsync(x => x.RefreshToken == request.RefreshToken);
+            .FirstOrDefaultAsync(x => x.RefreshToken == incomingHash);
 
         if (user is null)
         {
@@ -184,7 +192,8 @@ public class AuthService : IAuthService
         var newAccessToken  = await _tokenService.CreateAccessTokenAsync(user);
         var newRefreshToken = _tokenService.CreateRefreshToken();
 
-        user.RefreshToken           = newRefreshToken;
+        // Yeni token-in hash-ini saxla
+        user.RefreshToken           = AppUser.HashRefreshToken(newRefreshToken);
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
 
@@ -192,7 +201,7 @@ public class AuthService : IAuthService
         return new TokenResponseDto
         {
             AccessToken  = newAccessToken,
-            RefreshToken = newRefreshToken,
+            RefreshToken = newRefreshToken,   // Plain text yalnız client-ə göndərilir
             ExpireDate   = DateTime.UtcNow.AddMinutes(15)
         };
     }
@@ -207,7 +216,7 @@ public class AuthService : IAuthService
         user.RefreshTokenExpiryTime = DateTime.MinValue;
         await _userManager.UpdateAsync(user);
 
-        _log.Information("İstifadəçi çıxış etdi — UserId: {UserId} Email: {Email}", userId, user.Email);
+        _log.Information("İstifadəçi çıxış etdi — UserId: {UserId}", userId);
     }
 
     public async Task ForgotPasswordAsync(ForgotPasswordDto dto)
@@ -217,6 +226,7 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
         {
+            // İstifadəçi mövcud deyilsə cavab dəyişmir — timing attack yoxdur
             _log.Warning("Şifrə sıfırlama — İstifadəçi tapılmadı — Email: {Email}", dto.Email);
             return;
         }
@@ -226,7 +236,7 @@ public class AuthService : IAuthService
         {
             await _emailService.SendForgotPasswordAsync(
                 user.Email!, $"{user.Name} {user.Surname}", token, Lang);
-            _log.Information("Şifrə sıfırlama emaili göndərildi — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+            _log.Information("Şifrə sıfırlama emaili göndərildi — UserId: {UserId}", user.Id);
         }
         catch (Exception ex)
         {
@@ -250,19 +260,27 @@ public class AuthService : IAuthService
                 .ToDictionary(
                     g => g.Key,
                     g => g.Select(e => ValidationMessages.Get(Lang, e.Code)).ToList());
-            _log.Warning("Şifrə sıfırlanarkən xəta — UserId: {UserId} Xətalar: {Errors}", user.Id, errors);
+            _log.Warning("Şifrə sıfırlanarkən xəta — UserId: {UserId}", user.Id);
             throw new Application.Exceptions.ValidationException(errors);
         }
 
-        _log.Information("Şifrə uğurla sıfırlandı — UserId: {UserId} Email: {Email}", user.Id, user.Email);
+        // Şifrə dəyişdikdən sonra bütün aktiv sessionları ləğv et
+        user.RefreshToken           = null;
+        user.RefreshTokenExpiryTime = DateTime.MinValue;
+        await _userManager.UpdateAsync(user);
+
+        _log.Information("Şifrə uğurla sıfırlandı — UserId: {UserId}", user.Id);
     }
 
     private async Task<TokenResponseDto> CreateTokenAndSaveAsync(AppUser user)
     {
         var tokenResponse = await _tokenService.CreateTokenAsync(user);
-        user.RefreshToken           = tokenResponse.RefreshToken;
+
+        // Plain text token client-ə göndərilir, DB-ə sadəcə hash yazılır
+        user.RefreshToken           = AppUser.HashRefreshToken(tokenResponse.RefreshToken);
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
+
         return tokenResponse;
     }
 }

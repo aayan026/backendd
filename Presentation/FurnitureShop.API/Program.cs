@@ -226,6 +226,7 @@ try
     app.UseSwagger();
     app.UseSwaggerUI();
     app.UseGlobalExceptionHandler();
+    app.UseAuthRateLimiting();
     app.UseCors("AllowFrontend");
     app.UseAuthentication();
     app.UseAuthorization();

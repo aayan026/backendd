@@ -1,14 +1,11 @@
 ﻿using FurnitureShop.Domain.Entities.Common;
 using FurnitureShop.Domain.Entities.Concretes.Translation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace FurnitureShop.Domain.Entities.Concretes;
-public class Product:BaseEntity
+
+public class Product : BaseEntity
 {
     public decimal Price { get; set; }
     public int FurnitureCategoryId { get; set; }
@@ -24,10 +21,12 @@ public class Product:BaseEntity
     public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
     public string? Label { get; set; }
     public decimal? PriceExtra { get; set; }
-    public ICollection<ProductTranslation> Translations { get; set; }
-    public decimal? Width  { get; set; }
+    public ICollection<ProductTranslation> Translations { get; set; } = new List<ProductTranslation>();
+    public decimal? Width { get; set; }
     public decimal? Height { get; set; }
-    public decimal? Depth  { get; set; }
+    public decimal? Depth { get; set; }
     public decimal? Weight { get; set; }
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    [Timestamp]
+    public byte[]? RowVersion { get; set; }
 }

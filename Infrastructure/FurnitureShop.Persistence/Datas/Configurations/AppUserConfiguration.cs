@@ -16,6 +16,7 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .IsRequired()
             .HasMaxLength(100);
 
+        // SHA-256 hex = 64 char — köhnə 500-dən daha kiçik, migration tələb etmir
         builder.Property(x => x.RefreshToken)
             .HasMaxLength(500);
     }

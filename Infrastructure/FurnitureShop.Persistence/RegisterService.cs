@@ -5,12 +5,8 @@ using FurnitureShop.Domain.Entities.Identity;
 using FurnitureShop.Persistence.Datas;
 using FurnitureShop.Persistence.Repositories.ReadRepositories;
 using FurnitureShop.Persistence.Repositories.WriteRepositories;
-using FurnitureShop.Persistence.Repositories.ReadRepositories;
-using FurnitureShop.Persistence.Repositories.WriteRepositories;
 using FurnitureShop.Persistence.Services.Concretes;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,8 +19,20 @@ public static class RegisterService
         services.AddDbContext<AppDbContext>(opt =>
             opt.UseSqlServer(configuration.GetConnectionString("SqlServer")));
 
-        // ── Memory Cache ───────────────────────────────────────────────────
-        services.AddMemoryCache();
+        var redisConn = configuration["Redis:ConnectionString"];
+        if (!string.IsNullOrWhiteSpace(redisConn))
+        {
+            services.AddStackExchangeRedisCache(opt =>
+            {
+                opt.Configuration = redisConn;
+                opt.InstanceName  = "FurnitureShop:";
+            });
+        }
+        else
+        {
+            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
+        }
 
         AddRepositoriesExtension(services);
         AddServicesExtension(services);
