@@ -5,9 +5,6 @@ namespace FurnitureShop.API.Extensions;
 
 public static class SerilogExtensions
 {
-    /// <summary>
-    /// Program.cs bootstrap logger — proqram başlamazdan əvvəlki xətalar üçün.
-    /// </summary>
     public static void ConfigureBootstrapLogger()
     {
         Log.Logger = new LoggerConfiguration()
@@ -16,9 +13,7 @@ public static class SerilogExtensions
             .CreateBootstrapLogger();
     }
 
-    /// <summary>
-    /// Host Serilog konfiqurasiyası — fayl, console, Seq.
-    /// </summary>
+
     public static void AddSerilogConfiguration(this ConfigureHostBuilder host)
     {
         host.UseSerilog((context, services, config) =>
@@ -55,9 +50,6 @@ public static class SerilogExtensions
         });
     }
 
-    /// <summary>
-    /// Hər HTTP request-i avtomatik loglar.
-    /// </summary>
     public static void UseSerilogHttpLogging(this WebApplication app)
     {
         app.UseSerilogRequestLogging(options =>

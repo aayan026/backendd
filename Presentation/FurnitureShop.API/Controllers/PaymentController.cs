@@ -14,9 +14,7 @@ public class PaymentController : BaseApiController
         _orderService = orderService;
     }
 
-    /// <summary>
-    /// Admin: sifarişi ödənilmiş kimi işarələ
-    /// </summary>
+
     [Authorize(Roles = "Admin")]
     [HttpPost("{orderId}/mark-paid")]
     public async Task<IActionResult> MarkPaid(int orderId)
@@ -25,9 +23,6 @@ public class PaymentController : BaseApiController
         return OkResponse(new { success = true });
     }
 
-    /// <summary>
-    /// Admin: sifarişi ödənilməmiş / uğursuz kimi işarələ
-    /// </summary>
     [Authorize(Roles = "Admin")]
     [HttpPost("{orderId}/mark-failed")]
     public async Task<IActionResult> MarkFailed(int orderId)
