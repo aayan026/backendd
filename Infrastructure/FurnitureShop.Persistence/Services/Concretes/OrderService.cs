@@ -115,7 +115,6 @@ public class OrderService : IOrderService
             decimal subtotal       = 0;
             var itemPrices = new Dictionary<int, decimal>();
 
-            // ── 1. Stok yoxla, subtotal hesabla ─────────────────────────
             foreach (var item in dto.Items)
             {
                 if (item.ProductId.HasValue)
@@ -124,7 +123,6 @@ public class OrderService : IOrderService
                     if (product is null)
                         throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-                    // Custom sifariş isə stok tələbi yoxdur — sıfırdan hazırlanır
                     if (!dto.IsCustomOrder && product.Stock < item.Quantity)
                         throw new Application.Exceptions.ValidationException(
                             new Dictionary<string, List<string>>
@@ -144,7 +142,6 @@ public class OrderService : IOrderService
                 }
             }
 
-            // ── 2. Discount kodu yoxla ───────────────────────────────────
             if (dto.DiscountCodeId.HasValue)
             {
                 var discount = await _discountReadRepo.GetByIdAsync(dto.DiscountCodeId.Value);
@@ -176,14 +173,12 @@ public class OrderService : IOrderService
                 _discountWriteRepo.Update(discount);
             }
 
-            // ── 3. Çatdırılma qiyməti ────────────────────────────────────
             const decimal freeShippingThreshold = 500m;
             const decimal shippingCost          = 15m;
             order.ShippingCost   = subtotal >= freeShippingThreshold ? 0 : shippingCost;
             order.DiscountAmount = discountAmount;
             order.TotalPrice     = subtotal - discountAmount + order.ShippingCost;
 
-            // ── 4. UnitPrice saxla ───────────────────────────────────────
             foreach (var orderItem in order.Items)
             {
                 if (orderItem.ProductId.HasValue && itemPrices.TryGetValue(orderItem.ProductId.Value, out var price))
@@ -198,7 +193,6 @@ public class OrderService : IOrderService
             await _writeRepo.AddAsync(order);
             await _writeRepo.SaveChangesAsync();
 
-            // ── 5. Stok azalt — yalnız standart sifarişdə ────────────────
             if (!dto.IsCustomOrder)
             {
                 foreach (var item in dto.Items.Where(i => i.ProductId.HasValue))
@@ -223,7 +217,6 @@ public class OrderService : IOrderService
                 }
             }
 
-            // ── 6. Cart-ı təmizlə ────────────────────────────────────────
             var cart = await _cartReadRepo.GetByUserIdAsync(userId);
             if (cart is not null)
             {
@@ -237,7 +230,6 @@ public class OrderService : IOrderService
             _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} TotalPrice: {TotalPrice} IsCustom: {IsCustom}",
                 order.Id, order.TotalPrice, order.IsCustomOrder);
 
-            // ── 7. Email bildirişləri — fire-and-forget ─────────────────
             var capturedOrderId       = order.Id;
             var capturedTotal         = order.TotalPrice;
             var capturedLang          = Lang;
@@ -252,7 +244,6 @@ public class OrderService : IOrderService
                 {
                     var userEntity = await _userManager.FindByIdAsync(userId);
 
-                    // Müştəriyə təsdiq emaili
                     if (userEntity?.Email is not null)
                     {
                         await _emailService.SendOrderConfirmationAsync(
@@ -339,7 +330,6 @@ public class OrderService : IOrderService
             _writeRepo.Update(order);
             await _writeRepo.SaveChangesAsync();
 
-            // Stok geri qaytarma yalnız standart sifarişdə
             if (!order.IsCustomOrder)
             {
                 foreach (var item in order.Items.Where(i => i.ProductId.HasValue))
@@ -404,8 +394,6 @@ public class OrderService : IOrderService
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
         order.Status = dto.Status;
-
-        // Admin qeyd və ya təxmini çatdırılma tarixi yazıbsa saxla
         if (dto.AdminNote is not null)
             order.AdminNote = dto.AdminNote;
 
@@ -418,7 +406,6 @@ public class OrderService : IOrderService
         _log.Information("Sifariş statusu dəyişdirildi — OrderId: {OrderId} Status: {Status} AdminNote: {Note}",
             id, dto.Status, dto.AdminNote);
 
-        // Status email — fire-and-forget
         if (order.User?.Email is not null)
         {
             var capturedUser     = order.User;

@@ -15,9 +15,9 @@ public class OrderItem:BaseEntity
     public Product Product { get; set; }
     public int? CollectionId { get; set; }     
     public Collection Collection { get; set; }
-    public string SelectedColor { get; set; }
-    public string SelectedSize { get; set; }
+    public string? SelectedColor { get; set; }
+    public string? SelectedSize { get; set; }
+    public string? CustomDescription { get; set; }
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
-    public string CustomDescription { get; set; } 
 }

@@ -63,5 +63,17 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
             .WithMany()
             .HasForeignKey(x => x.CollectionId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Property(x => x.CustomDescription)
+            .HasMaxLength(2000)
+            .IsRequired(false);
+
+        builder.Property(x => x.SelectedColor)
+    .HasMaxLength(50)
+    .IsRequired(false);
+
+        builder.Property(x => x.SelectedSize)
+            .HasMaxLength(50)
+            .IsRequired(false);
     }
 }

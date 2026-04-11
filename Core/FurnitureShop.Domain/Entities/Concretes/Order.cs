@@ -28,19 +28,15 @@ public class Order:BaseEntity
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
 
     public string? Note { get; set; }
-
-    // Admin tərəfindən yazılan qeyd və təxmini çatdırılma tarixi
     public string? AdminNote { get; set; }
     public DateTime? EstimatedDeliveryDate { get; set; }
 
-    // Xüsusi sifariş (custom) — ölçü/rəng dəyişikliyi tələb edir
     public bool IsCustomOrder { get; set; } = false;
-    public string? CustomDescription { get; set; } // Müştərinin xüsusi tələbi
+    public string? CustomDescription { get; set; }
 
-    // Ödəniş detalları
-    public decimal? PaidAmount { get; set; }        // İlkin ödəniş məbləği (partial)
-    public int? InstallmentMonths { get; set; }     // Kredit ayı
-    public decimal? MonthlyPayment { get; set; }    // Aylıq ödəniş (kredit)
+    public decimal? PaidAmount { get; set; }       
+    public int? InstallmentMonths { get; set; }     
+    public decimal? MonthlyPayment { get; set; } 
 
     public string UserId { get; set; }
     public AppUser? User { get; set; }
