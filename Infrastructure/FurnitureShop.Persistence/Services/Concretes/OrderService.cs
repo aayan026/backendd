@@ -12,60 +12,64 @@ using FurnitureShop.Domain.Entities.Identity;
 using FurnitureShop.Persistence.Datas;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class OrderService : IOrderService
 {
-    private readonly IOrderReadRepository         _readRepo;
-    private readonly IOrderWriteRepository        _writeRepo;
-    private readonly ICartWriteRepository         _cartWriteRepo;
-    private readonly ICartReadRepository          _cartReadRepo;
-    private readonly IDiscountCodeReadRepository  _discountReadRepo;
+    private readonly IOrderReadRepository _readRepo;
+    private readonly IOrderWriteRepository _writeRepo;
+    private readonly ICartWriteRepository _cartWriteRepo;
+    private readonly ICartReadRepository _cartReadRepo;
+    private readonly IDiscountCodeReadRepository _discountReadRepo;
     private readonly IDiscountCodeWriteRepository _discountWriteRepo;
-    private readonly IProductReadRepository       _productReadRepo;
-    private readonly IProductWriteRepository      _productWriteRepo;
-    private readonly ICollectionReadRepository    _collectionReadRepo;
-    private readonly ILanguageService             _langService;
-    private readonly IEmailService                _emailService;
-    private readonly UserManager<AppUser>         _userManager;
-    private readonly IMapper                      _mapper;
-    private readonly AppDbContext                 _db;
+    private readonly IProductReadRepository _productReadRepo;
+    private readonly IProductWriteRepository _productWriteRepo;
+    private readonly ICollectionReadRepository _collectionReadRepo;
+    private readonly ILanguageService _langService;
+    private readonly IEmailService _emailService;
+    private readonly UserManager<AppUser> _userManager;
+    private readonly IMapper _mapper;
+    private readonly AppDbContext _db;
+    private readonly IServiceScopeFactory _scopeFactory;
     private static readonly ILogger _log = Log.ForContext<OrderService>();
 
     private string Lang => _langService.GetCurrentLanguage();
 
     public OrderService(
-        IOrderReadRepository         readRepo,
-        IOrderWriteRepository        writeRepo,
-        ICartWriteRepository         cartWriteRepo,
-        ICartReadRepository          cartReadRepo,
-        IDiscountCodeReadRepository  discountReadRepo,
+        IOrderReadRepository readRepo,
+        IOrderWriteRepository writeRepo,
+        ICartWriteRepository cartWriteRepo,
+        ICartReadRepository cartReadRepo,
+        IDiscountCodeReadRepository discountReadRepo,
         IDiscountCodeWriteRepository discountWriteRepo,
-        IProductReadRepository       productReadRepo,
-        IProductWriteRepository      productWriteRepo,
-        ICollectionReadRepository    collectionReadRepo,
-        ILanguageService             langService,
-        IEmailService                emailService,
-        UserManager<AppUser>         userManager,
-        IMapper                      mapper,
-        AppDbContext                 db)
+        IProductReadRepository productReadRepo,
+        IProductWriteRepository productWriteRepo,
+        ICollectionReadRepository collectionReadRepo,
+        ILanguageService langService,
+        IEmailService emailService,
+        UserManager<AppUser> userManager,
+        IMapper mapper,
+        AppDbContext db,
+        IServiceScopeFactory scopeFactory)
     {
-        _readRepo           = readRepo;
-        _writeRepo          = writeRepo;
-        _cartWriteRepo      = cartWriteRepo;
-        _cartReadRepo       = cartReadRepo;
-        _discountReadRepo   = discountReadRepo;
-        _discountWriteRepo  = discountWriteRepo;
-        _productReadRepo    = productReadRepo;
-        _productWriteRepo   = productWriteRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
+        _cartWriteRepo = cartWriteRepo;
+        _cartReadRepo = cartReadRepo;
+        _discountReadRepo = discountReadRepo;
+        _discountWriteRepo = discountWriteRepo;
+        _productReadRepo = productReadRepo;
+        _productWriteRepo = productWriteRepo;
         _collectionReadRepo = collectionReadRepo;
-        _langService        = langService;
-        _emailService       = emailService;
-        _userManager        = userManager;
-        _mapper             = mapper;
-        _db                 = db;
+        _langService = langService;
+        _emailService = emailService;
+        _userManager = userManager;
+        _mapper = mapper;
+        _db = db;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<IEnumerable<OrderDto>> GetUserOrdersAsync(string userId)
@@ -83,7 +87,7 @@ public class OrderService : IOrderService
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        var user    = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         var isAdmin = user is not null && await _userManager.IsInRoleAsync(user, "Admin");
 
         if (!isAdmin && order.UserId != userId)
@@ -104,15 +108,15 @@ public class OrderService : IOrderService
         try
         {
             var order = _mapper.Map<Order>(dto);
-            order.UserId        = userId;
-            order.Status        = OrderStatus.Pending;
+            order.UserId = userId;
+            order.Status = OrderStatus.Pending;
             order.PaymentStatus = PaymentStatus.Pending;
 
             if (dto.DeliveryInfo is not null)
                 order.DeliveryInfo = _mapper.Map<DeliveryInfo>(dto.DeliveryInfo);
 
             decimal discountAmount = 0;
-            decimal subtotal       = 0;
+            decimal subtotal = 0;
             var itemPrices = new Dictionary<int, decimal>();
 
             foreach (var item in dto.Items)
@@ -174,10 +178,10 @@ public class OrderService : IOrderService
             }
 
             const decimal freeShippingThreshold = 500m;
-            const decimal shippingCost          = 15m;
-            order.ShippingCost   = subtotal >= freeShippingThreshold ? 0 : shippingCost;
+            const decimal shippingCost = 15m;
+            order.ShippingCost = subtotal >= freeShippingThreshold ? 0 : shippingCost;
             order.DiscountAmount = discountAmount;
-            order.TotalPrice     = subtotal - discountAmount + order.ShippingCost;
+            order.TotalPrice = subtotal - discountAmount + order.ShippingCost;
 
             foreach (var orderItem in order.Items)
             {
@@ -230,43 +234,49 @@ public class OrderService : IOrderService
             _log.Information("Sifariş uğurla yaradıldı — OrderId: {OrderId} TotalPrice: {TotalPrice} IsCustom: {IsCustom}",
                 order.Id, order.TotalPrice, order.IsCustomOrder);
 
-            var capturedOrderId       = order.Id;
-            var capturedTotal         = order.TotalPrice;
-            var capturedLang          = Lang;
-            var capturedMethod        = order.PaymentMethod;
-            var capturedNote          = order.Note;
-            var capturedIsCustom      = order.IsCustomOrder;
-            var capturedCustomDesc    = order.CustomDescription;
+            var capturedOrderId = order.Id;
+            var capturedTotal = order.TotalPrice;
+            var capturedLang = Lang;
+            var capturedMethod = order.PaymentMethod;
+            var capturedNote = order.Note;
+            var capturedIsCustom = order.IsCustomOrder;
+            var capturedCustomDesc = order.CustomDescription;
+
+            var userEntity = await _userManager.FindByIdAsync(userId);
+            var capturedEmail = userEntity?.Email;
+            var capturedFullName = userEntity is not null ? $"{userEntity.Name} {userEntity.Surname}" : "—";
+            var capturedPhone = userEntity?.PhoneNumber ?? "—";
+
+            var payMethodLabel = capturedMethod switch
+            {
+                PaymentMethod.CashOnDelivery => "Nağd",
+                PaymentMethod.Card => "Kart",
+                PaymentMethod.BankTransfer => "Bank köçürməsi",
+                PaymentMethod.Installment => "Kredit/Taksit",
+                PaymentMethod.PartialCard => "İlkin ödəniş + qalan nağd",
+                _ => capturedMethod.ToString()
+            };
 
             _ = Task.Run(async () =>
             {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
                 try
                 {
-                    var userEntity = await _userManager.FindByIdAsync(userId);
-
-                    if (userEntity?.Email is not null)
+                    if (capturedEmail is not null)
                     {
-                        await _emailService.SendOrderConfirmationAsync(
-                            userEntity.Email,
-                            $"{userEntity.Name} {userEntity.Surname}",
+                        await emailService.SendOrderConfirmationAsync(
+                            capturedEmail,
+                            capturedFullName,
                             capturedOrderId, capturedTotal, capturedLang);
                     }
 
-                    var payMethodLabel = capturedMethod switch
-                    {
-                        PaymentMethod.CashOnDelivery => "Nağd",
-                        PaymentMethod.Card           => "Kart",
-                        PaymentMethod.BankTransfer   => "Bank köçürməsi",
-                        PaymentMethod.Installment    => "Kredit/Taksit",
-                        PaymentMethod.PartialCard    => "İlkin ödəniş + qalan nağd",
-                        _                            => capturedMethod.ToString()
-                    };
-
-                    await _emailService.SendAdminOrderNotificationAsync(
+                    await emailService.SendAdminOrderNotificationAsync(
                         capturedOrderId,
-                        userEntity is not null ? $"{userEntity.Name} {userEntity.Surname}" : "—",
-                        userEntity?.Email ?? "—",
-                        userEntity?.PhoneNumber ?? "—",
+                        capturedFullName,
+                        capturedEmail ?? "—",
+                        capturedPhone,
                         capturedTotal,
                         payMethodLabel,
                         capturedNote ?? "—",
@@ -293,11 +303,11 @@ public class OrderService : IOrderService
     {
         _log.Information("Sifariş ləğv edilmə tələbi — OrderId: {OrderId} UserId: {UserId}", id, userId);
 
-        var order = await _readRepo.GetByIdAsync(id);
+        var order = await _readRepo.GetWithDetailsAsync(id);
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
-        var user    = await _userManager.FindByIdAsync(userId);
+        var user = await _userManager.FindByIdAsync(userId);
         var isAdmin = user is not null && await _userManager.IsInRoleAsync(user, "Admin");
 
         if (!isAdmin && order.UserId != userId)
@@ -362,7 +372,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetAllPagedAsync(pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -372,7 +382,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetByStatusPagedAsync(status, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -382,7 +392,7 @@ public class OrderService : IOrderService
         var (items, total) = await _readRepo.GetByDateRangePagedAsync(from, to, pagination.Page, pagination.PageSize);
         return new PagedList<OrderDto>
         {
-            Items      = _mapper.Map<List<OrderDto>>(items),
+            Items = _mapper.Map<List<OrderDto>>(items),
             Pagination = new PaginationMeta(pagination.Page, pagination.PageSize, total)
         };
     }
@@ -408,20 +418,23 @@ public class OrderService : IOrderService
 
         if (order.User?.Email is not null)
         {
-            var capturedUser     = order.User;
-            var capturedId       = order.Id;
-            var capturedStatus   = dto.Status;
-            var capturedNote     = dto.AdminNote;
+            var capturedEmail = order.User.Email;
+            var capturedFullName = $"{order.User.Name} {order.User.Surname}";
+            var capturedId = order.Id;
+            var capturedStatus = dto.Status;
+            var capturedNote = dto.AdminNote;
             var capturedDelivery = dto.EstimatedDeliveryDate;
-            var capturedLang     = Lang;
+            var capturedLang = Lang;
 
             _ = Task.Run(async () =>
             {
+                await using var scope = _scopeFactory.CreateAsyncScope();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                 try
                 {
-                    await _emailService.SendOrderStatusChangedAsync(
-                        capturedUser.Email!,
-                        $"{capturedUser.Name} {capturedUser.Surname}",
+                    await emailService.SendOrderStatusChangedAsync(
+                        capturedEmail,
+                        capturedFullName,
                         capturedId,
                         capturedStatus.ToString(),
                         capturedNote,
