@@ -311,6 +311,22 @@ public class ProductService : IProductService
         _log.Information("Məhsul yeniləndi — ProductId: {ProductId}", dto.Id);
     }
 
+    public async Task<IEnumerable<ProductColorDto>> GetDistinctColorsAsync()
+    {
+        var colors = await _db.ProductColors
+            .Where(c => !c.Product.IsDeleted)
+            .Select(c => new ProductColorDto { Name = c.Name, HexCode = c.HexCode })
+            .Distinct()
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+
+        // Eyni ad amma fərqli hex ola bilər — adına görə deduplicate et
+        return colors
+            .GroupBy(c => c.Name.Trim().ToLower())
+            .Select(g => g.First())
+            .ToList();
+    }
+
     public async Task DeleteAsync(int id)
     {
         _log.Information("Məhsul silinir — ProductId: {ProductId}", id);

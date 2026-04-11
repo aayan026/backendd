@@ -230,6 +230,48 @@ public class EmailService : IEmailService
         });
     }
 
+    // ── Contact form bildirişi (adminə email) ────────────────────────────
+    public async Task SendContactNotificationAsync(
+        string fromName, string fromEmail, string? fromPhone,
+        string? subject, string message, string lang)
+    {
+        var adminEmail = _config["Email:AdminEmail"]
+                      ?? _config["SeedAdmin:Email"]
+                      ?? "admin@furnitureshop.az";
+
+        var emailSubject = $"📩 Yeni Müraciət: {subject ?? "Ümumi"} — Amore Mebel";
+
+        var rows = new List<(string, string)>
+        {
+            ("Ad Soyad:",   fromName),
+            ("📧 E-poçt:",  $"<a href='mailto:{fromEmail}'>{fromEmail}</a>"),
+        };
+
+        if (!string.IsNullOrWhiteSpace(fromPhone))
+            rows.Add(("📞 Telefon:", $"<a href='tel:{fromPhone}'><strong>{fromPhone}</strong></a>"));
+
+        if (!string.IsNullOrWhiteSpace(subject))
+            rows.Add(("Mövzu:", $"<em>{subject}</em>"));
+
+        rows.Add(("Mesaj:", $"<div style='background:#f7f3ee;padding:12px 16px;border-left:3px solid #7A9E7E;margin-top:4px;line-height:1.7;color:#3C3C3C'>{System.Net.WebUtility.HtmlEncode(message).Replace("\n", "<br/>")}</div>"));
+
+        var body = BuildOrderEmailHtml(
+            "Yeni Müraciət Daxil Oldu",
+            $"Veb saytın contact formu vasitəsilə <strong>{fromName}</strong> tərəfindən yeni müraciət gəldi.",
+            rows.ToArray(),
+            ctaUrl: $"mailto:{fromEmail}",
+            ctaLabel: "Cavab Ver",
+            accentColor: "#7A9E7E");
+
+        await SendAsync(new SendEmailDto
+        {
+            ToEmail = adminEmail,
+            ToName  = "Amore Mebel Admin",
+            Subject = emailSubject,
+            Body    = body,
+        });
+    }
+
     // ── HTML Builder ─────────────────────────────────────────────────────
     private static string BuildHtml(string lang, string heading, string body1, string body2, string ctaUrl, string ctaLabel)
     {

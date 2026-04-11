@@ -83,5 +83,6 @@ public static class RegisterService
         services.AddScoped<IAddressService,           AddressService>();
         services.AddScoped<IAdminService,            AdminService>();
         services.AddScoped<IReviewService,           ReviewService>();
+        services.AddScoped<IContactService,          ContactService>();
     }
 }

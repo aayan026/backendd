@@ -58,6 +58,13 @@ public class ProductController : BaseApiController
         return Ok(ApiResponse<List<ProductDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
 
+    /// <summary>
+    /// Bütün məhsullarda mövcud olan unikal rənglər — FurnitureCategoryPage filter üçün
+    /// </summary>
+    [HttpGet("colors")]
+    public async Task<IActionResult> GetDistinctColors()
+        => OkResponse(await _service.GetDistinctColorsAsync());
+
     [HttpGet("price-range")]
     public async Task<IActionResult> GetByPriceRange(
         [FromQuery] decimal min,
