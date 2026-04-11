@@ -13,9 +13,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(x => x.DiscountAmount).HasColumnType("decimal(18,2)");
         builder.Property(x => x.Note).HasMaxLength(500);
 
-        // Yeni fieldlar — OrderCustomFields migration ilə əlavə edilib
         builder.Property(x => x.AdminNote).HasMaxLength(1000);
-        builder.Property(x => x.CustomDescription).HasMaxLength(2000);
+        builder.Property(x => x.CustomDescription)
+.IsRequired(false);
         builder.Property(x => x.PaidAmount).HasColumnType("decimal(18,2)");
         builder.Property(x => x.MonthlyPayment).HasColumnType("decimal(18,2)");
 

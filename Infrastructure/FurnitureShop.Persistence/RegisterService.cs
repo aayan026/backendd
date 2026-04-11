@@ -40,7 +40,6 @@ public static class RegisterService
 
     private static void AddRepositoriesExtension(IServiceCollection services)
     {
-        // Read Repositories
         services.AddScoped<IProductReadRepository,             ProductReadRepository>();
         services.AddScoped<IFurnitureCategoryReadRepository,   FurnitureCategoryReadRepository>();
         services.AddScoped<ICollectionReadRepository,          CollectionReadRepository>();
@@ -54,7 +53,6 @@ public static class RegisterService
         services.AddScoped<IDiscountCodeReadRepository,        DiscountCodeReadRepository>();
         services.AddScoped<IReviewReadRepository,              ReviewReadRepository>();
 
-        // Write Repositories
         services.AddScoped<IProductWriteRepository,            ProductWriteRepository>();
         services.AddScoped<IFurnitureCategoryWriteRepository,  FurnitureCategoryWriteRepository>();
         services.AddScoped<ICollectionWriteRepository,         CollectionWriteRepository>();

@@ -19,13 +19,7 @@ public static class RegisterService
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IFileUploadService, CloudinaryFileUploadService>();
-        services.AddScoped<IPaymentService, PaymentService>();
 
-        // Payriff üçün HttpClient
-        services.AddHttpClient("Payriff", client =>
-        {
-            client.Timeout = TimeSpan.FromSeconds(30);
-        });
 
         services.AddAuthentication(options =>
         {

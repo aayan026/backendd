@@ -27,14 +27,5 @@ public class CreateOrderValidator : AbstractValidator<CreateOrderDto>
 
         RuleFor(x => x.DeliveryInfo)
             .NotNull().WithMessage("Required|DeliveryInfo");
-
-        When(x => x.DeliveryInfo != null, () =>
-        {
-            RuleFor(x => x.DeliveryInfo!.ScheduledDate)
-                .GreaterThan(DateTime.UtcNow)
-                .WithMessage("FutureDate|ScheduledDate");
-            RuleFor(x => x.DeliveryInfo!.TimeSlot)
-                .NotEmpty().WithMessage("Required|TimeSlot");
-        });
     }
 }
