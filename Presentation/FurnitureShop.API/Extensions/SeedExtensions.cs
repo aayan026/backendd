@@ -6,9 +6,7 @@ namespace FurnitureShop.API.Extensions;
 
 public static class SeedExtensions
 {
-    /// <summary>
-    /// Rol və Admin seed-i — tətbiq başlayanda bir dəfə işləyir.
-    /// </summary>
+
     public static async Task SeedRolesAndAdminAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
@@ -16,7 +14,6 @@ public static class SeedExtensions
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
         var config      = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
-        // ── Rollar ──────────────────────────────────────────────────────
         foreach (var roleName in new[] { "Admin", "Customer" })
         {
             if (!await roleManager.RoleExistsAsync(roleName))
@@ -28,7 +25,6 @@ public static class SeedExtensions
                 });
         }
 
-        // ── Admin istifadəçisi ───────────────────────────────────────────
         var adminEmail    = config["SeedAdmin:Email"]    ?? "admin@furnitureshop.az";
         var adminPassword = config["SeedAdmin:Password"];
 

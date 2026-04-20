@@ -15,9 +15,6 @@ public class MediaController : BaseApiController
         _uploadService = uploadService;
     }
 
-    /// <summary>
-    /// Şəkil yükləyir — products, collections, categories üçün
-    /// </summary>
     [HttpPost("upload")]
     public async Task<IActionResult> Upload(IFormFile file, [FromQuery] string folder = "general")
     {
@@ -28,9 +25,7 @@ public class MediaController : BaseApiController
         return CreatedResponse(result);
     }
 
-    /// <summary>
-    /// Şəkili silir
-    /// </summary>
+
     [HttpDelete]
     public async Task<IActionResult> Delete([FromQuery] string url)
     {

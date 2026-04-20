@@ -4,10 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FurnitureShop.API.Controllers;
 
-/// <summary>
-/// Contact form endpoint-i.
-/// POST /api/contact/send — adminin emailinə + telefona bildiriş göndərir.
-/// </summary>
+
 [Route("api/contact")]
 public class ContactController : BaseApiController
 {
@@ -18,9 +15,7 @@ public class ContactController : BaseApiController
         _contact = contact;
     }
 
-    /// <summary>
-    /// Contact formunu qəbul edib admin emailinə + SMS-ə yönləndirir.
-    /// </summary>
+
     [HttpPost("send")]
     public async Task<IActionResult> Send([FromBody] ContactMessageDto dto)
     {

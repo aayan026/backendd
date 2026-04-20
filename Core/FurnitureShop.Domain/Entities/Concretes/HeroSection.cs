@@ -8,9 +8,12 @@ using System.Threading.Tasks;
 
 namespace FurnitureShop.Domain.Entities.Concretes;
 
-public class HeroSection:BaseEntity
+public class HeroSection : BaseEntity
 {
     public ICollection<HeroTranslation> Translations { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
+
+    public int? CollectionId { get; set; }
+    public Collection? Collection { get; set; }
 }

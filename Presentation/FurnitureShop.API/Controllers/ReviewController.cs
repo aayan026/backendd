@@ -15,10 +15,7 @@ public class ReviewController : BaseApiController
         _service = service;
     }
 
-    /// <summary>
-    /// Məhsula aid rəyləri paginasiya ilə gətir.
-    /// GET /api/reviews/by-product/{productId}?page=1&pageSize=5
-    /// </summary>
+
     [HttpGet("by-product/{productId:int}")]
     public async Task<IActionResult> GetByProduct(
         int productId,
@@ -28,10 +25,7 @@ public class ReviewController : BaseApiController
         return Ok(ApiResponse<List<ReviewDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
 
-    /// <summary>
-    /// Yeni rəy əlavə et.
-    /// POST /api/reviews
-    /// </summary>
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReviewDto dto)
     {

@@ -20,7 +20,7 @@ public class DiscountCodeController : BaseApiController
     public async Task<IActionResult> Validate([FromBody] ValidateDiscountCodeDto dto)
         => OkResponse(await _service.ValidateAsync(dto));
 
-    // ── Admin ──────────────────────────────────────────────────────────────
+    
 
     [Authorize(Roles = "Admin")]
     [HttpGet]

@@ -19,7 +19,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        // ── Product ───────────────────────────────────────────────────────
+        // Product 
         CreateMap<ProductImage, ProductImageDto>();
         CreateMap<ProductColor, ProductColorDto>();
 
@@ -52,7 +52,7 @@ public class MappingProfile : Profile
         CreateMap<CreateProductColorDto, ProductColor>();
         CreateMap<ProductTranslationDto, ProductTranslation>();
 
-        // ── FurnitureCategory ─────────────────────────────────────────────
+        // FurnitureCategory 
         CreateMap<FurnitureCategory, FurnitureCategoryDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null
@@ -68,7 +68,7 @@ public class MappingProfile : Profile
 
         CreateMap<FurnitureCategoryTranslationDto, FurnitureCategoryTranslation>();
 
-        // ── Collection ────────────────────────────────────────────────────
+        // Collection
         CreateMap<Collection, CollectionDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null
@@ -97,7 +97,7 @@ public class MappingProfile : Profile
 
         CreateMap<CollectionTranslationDto, CollectionTranslation>();
 
-        // ── CollectionCategory ────────────────────────────────────────────
+        // CollectionCategory 
         CreateMap<CollectionCategory, CollectionCategoryDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null
@@ -236,6 +236,7 @@ public class MappingProfile : Profile
                 s.Translations.FirstOrDefault() != null
                     ? s.Translations.First().Title
                     : string.Empty))
+            .ForMember(d => d.CollectionId, o => o.MapFrom(s => s.CollectionId))
             .ForMember(d => d.Subtitle, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null
                     ? s.Translations.First().Subtitle

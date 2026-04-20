@@ -27,9 +27,6 @@ public class ProductController : BaseApiController
     public async Task<IActionResult> GetFeatured()
         => OkResponse(await _service.GetFeaturedAsync());
 
-    /// <summary>
-    /// FurnitureCategory-yə görə məhsullar (paginasiya ilə)
-    /// </summary>
     [HttpGet("by-furniture-category/{categoryId}")]
     public async Task<IActionResult> GetByFurnitureCategory(int categoryId, [FromQuery] PaginationParams pagination)
     {
@@ -58,9 +55,7 @@ public class ProductController : BaseApiController
         return Ok(ApiResponse<List<ProductDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
     }
 
-    /// <summary>
-    /// Bütün məhsullarda mövcud olan unikal rənglər — FurnitureCategoryPage filter üçün
-    /// </summary>
+    
     [HttpGet("colors")]
     public async Task<IActionResult> GetDistinctColors()
         => OkResponse(await _service.GetDistinctColorsAsync());
@@ -79,18 +74,10 @@ public class ProductController : BaseApiController
     public async Task<IActionResult> GetById(int id)
         => OkResponse(await _service.GetDetailAsync(id));
 
-    /// <summary>
-    /// Oxşar məhsullar: eyni kateqoriya + yaxın qiymət aralığı + material uyğunluğu
-    /// GET /api/products/{id}/similar
-    /// </summary>
     [HttpGet("{id:int}/similar")]
     public async Task<IActionResult> GetSimilar(int id)
         => OkResponse(await _service.GetSimilarAsync(id));
 
-    /// <summary>
-    /// Ada (slug) görə məhsul. Frontend /products/:slug route-u üçün.
-    /// Məsələn: GET /api/products/by-name/velvet-lounge-sofa
-    /// </summary>
     [HttpGet("by-name/{slug}")]
     public async Task<IActionResult> GetByName(string slug)
         => OkResponse(await _service.GetByNameAsync(slug));

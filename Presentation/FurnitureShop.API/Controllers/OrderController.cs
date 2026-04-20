@@ -18,7 +18,6 @@ public class OrderController : BaseApiController
         _service = service;
     }
 
-    // ── Müştəri ───────────────────────────────────────────────────────────
 
     [HttpGet("my")]
     public async Task<IActionResult> GetMyOrders()
@@ -42,7 +41,6 @@ public class OrderController : BaseApiController
         return OkResponse<object>(new { message });
     }
 
-    // ── Admin ──────────────────────────────────────────────────────────────
 
     [Authorize(Roles = "Admin")]
     [HttpGet("admin/all")]

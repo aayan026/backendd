@@ -21,10 +21,7 @@ public class AdminController : BaseApiController
     public async Task<IActionResult> Dashboard()
         => OkResponse(await _adminService.GetDashboardAsync());
 
-    /// <summary>
-    /// GET /api/admin/dashboard/stats
-    /// Response: { totalProducts, totalOrders, todayOrders, totalRevenue, outOfStock, totalCustomers }
-    /// </summary>
+
     [HttpGet("dashboard/stats")]
     public async Task<IActionResult> DashboardStats()
     {

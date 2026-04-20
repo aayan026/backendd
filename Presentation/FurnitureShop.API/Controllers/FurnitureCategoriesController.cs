@@ -32,7 +32,7 @@ public class FurnitureCategoriesController : BaseApiController
         return CreatedResponse(new { id });
     }
 
-    // FIX: {id} route parametri əlavə edildi + id uyğunluğu yoxlanılır
+
     [Authorize(Roles = "Admin")]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateFurnitureCategoryDto dto)
