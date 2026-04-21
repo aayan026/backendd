@@ -47,7 +47,7 @@ public class PaymentService : IPaymentService
         _log.Information("PaymentIntent yaradılır — OrderId: {OrderId} UserId: {UserId}", orderId, userId);
 
         var order = await _readRepo.GetWithDetailsAsync(orderId, Lang)
-            ?? throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
+                   ?? throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
         if (order.UserId != userId)
             throw new ForbiddenException(ValidationMessages.Get(Lang, "OrderAccessForbidden"));
@@ -120,11 +120,11 @@ public class PaymentService : IPaymentService
 
         switch (stripeEvent.Type)
         {
-            case Stripe.Events.PaymentIntentSucceeded:
+            case "payment_intent.succeeded":
                 await MarkPaidAsync(orderId, intent.Id);
                 break;
 
-            case Stripe.Events.PaymentIntentPaymentFailed:
+            case "payment_intent.payment_failed":
                 await MarkFailedAsync(orderId, intent.Id);
                 break;
 
