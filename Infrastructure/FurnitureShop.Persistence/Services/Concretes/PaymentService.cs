@@ -46,7 +46,7 @@ public class PaymentService : IPaymentService
     {
         _log.Information("PaymentIntent yaradılır — OrderId: {OrderId} UserId: {UserId}", orderId, userId);
 
-        var order = await _readRepo.GetWithDetailsAsync(orderId)
+        var order = await _readRepo.GetWithDetailsAsync(orderId, Lang)
             ?? throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
         if (order.UserId != userId)

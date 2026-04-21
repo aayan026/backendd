@@ -41,7 +41,7 @@ public class CartService : ICartService
     public async Task<CartDto> GetAsync(string userId)
     {
         _log.Information("Səbət sorğusu — UserId: {UserId}", userId);
-        var cart = await _readRepo.GetByUserIdAsync(userId);
+        var cart = await _readRepo.GetByUserIdAsync(userId, lang);
         if (cart is null)
             return new CartDto();
         return _mapper.Map<CartDto>(cart);
@@ -98,7 +98,7 @@ public class CartService : ICartService
                 throw new NotFoundException(ValidationMessages.Get(lang, "CollectionNotFound"));
         }
 
-        var cart = await _readRepo.GetByUserIdAsync(userId);
+        var cart = await _readRepo.GetByUserIdAsync(userId, lang);
         if (cart is null)
         {
             cart = new Cart { UserId = userId };
@@ -153,7 +153,7 @@ public class CartService : ICartService
 
     public async Task UpdateQuantityAsync(string userId, int cartItemId, int quantity)
     {
-        var cart = await _readRepo.GetByUserIdAsync(userId);
+        var cart = await _readRepo.GetByUserIdAsync(userId, lang);
         if (cart is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CartNotFound"));
 
@@ -199,7 +199,7 @@ public class CartService : ICartService
 
     public async Task RemoveItemAsync(string userId, int cartItemId)
     {
-        var cart = await _readRepo.GetByUserIdAsync(userId);
+        var cart = await _readRepo.GetByUserIdAsync(userId, lang);
         if (cart is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CartNotFound"));
 
@@ -216,7 +216,7 @@ public class CartService : ICartService
 
     public async Task ClearAsync(string userId)
     {
-        var cart = await _readRepo.GetByUserIdAsync(userId);
+        var cart = await _readRepo.GetByUserIdAsync(userId, lang);
         if (cart is null) return;
 
         cart.Items.Clear();

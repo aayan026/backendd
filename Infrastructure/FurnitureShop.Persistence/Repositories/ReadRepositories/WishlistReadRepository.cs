@@ -10,7 +10,7 @@ public class WishlistReadRepository : GenericReadRepository<Wishlist>, IWishlist
 {
     public WishlistReadRepository(AppDbContext context) : base(context) { }
 
-    public async Task<Wishlist?> GetByUserIdAsync(string userId)
+    public async Task<Wishlist?> GetByUserIdAsync(string userId, string lang)
         => await Table
             .Where(x => x.UserId == userId)
             .Include(x => x.Items)
@@ -18,9 +18,9 @@ public class WishlistReadRepository : GenericReadRepository<Wishlist>, IWishlist
                     .ThenInclude(p => p!.Images.Where(img => img.IsPrimary))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
-                    .ThenInclude(p => p!.Translations)
+                    .ThenInclude(p => p!.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Collection)
-                    .ThenInclude(c => c!.Translations)
+                    .ThenInclude(c => c!.Translations.Where(t => t.Lang == lang))
             .FirstOrDefaultAsync();
 }

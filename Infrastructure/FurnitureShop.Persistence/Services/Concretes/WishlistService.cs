@@ -41,7 +41,7 @@ public class WishlistService : IWishlistService
     public async Task<WishlistDto> GetAsync(string userId)
     {
         _log.Information("İstək siyahısı sorğusu — UserId: {UserId}", userId);
-        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        var wishlist = await _readRepo.GetByUserIdAsync(userId, lang);
         if (wishlist is null)
             return new WishlistDto();
         return _mapper.Map<WishlistDto>(wishlist);
@@ -73,7 +73,7 @@ public class WishlistService : IWishlistService
                 throw new NotFoundException(ValidationMessages.Get(lang, "WishlistProductNotFound"));
         }
 
-        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        var wishlist = await _readRepo.GetByUserIdAsync(userId, lang);
         if (wishlist is null)
         {
             wishlist = new Wishlist { UserId = userId };
@@ -107,7 +107,7 @@ public class WishlistService : IWishlistService
 
     public async Task RemoveItemAsync(string userId, int wishlistItemId)
     {
-        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        var wishlist = await _readRepo.GetByUserIdAsync(userId, lang);
         if (wishlist is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "WishlistNotFound"));
 
@@ -124,7 +124,7 @@ public class WishlistService : IWishlistService
 
     public async Task<bool> IsInWishlistAsync(string userId, int? productId, int? collectionId)
     {
-        var wishlist = await _readRepo.GetByUserIdAsync(userId);
+        var wishlist = await _readRepo.GetByUserIdAsync(userId, lang);
         if (wishlist is null) return false;
 
         return wishlist.Items.Any(x =>

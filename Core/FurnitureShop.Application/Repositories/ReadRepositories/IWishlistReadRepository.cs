@@ -5,6 +5,5 @@ namespace FurnitureShop.Application.Repsitories.ReadRepositories;
 
 public interface IWishlistReadRepository : IGenericReadRepository<Wishlist>
 {
-    // İstifadəçinin wishlist-i — items + product ilə
-    Task<Wishlist?> GetByUserIdAsync(string userId);
+    Task<Wishlist?> GetByUserIdAsync(string userId, string lang);
 }

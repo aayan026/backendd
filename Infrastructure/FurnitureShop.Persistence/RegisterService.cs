@@ -69,20 +69,22 @@ public static class RegisterService
 
     private static void AddServicesExtension(IServiceCollection services)
     {
-        services.AddScoped<IProductService,           ProductService>();
+        services.AddScoped<IProductService,ProductService>();
         services.AddScoped<IFurnitureCategoryService, FurnitureCategoryService>();
-        services.AddScoped<ICollectionService,        CollectionService>();
+        services.AddScoped<ICollectionService,CollectionService>();
         services.AddScoped<ICollectionCategoryService,CollectionCategoryService>();
-        services.AddScoped<IOrderService,             OrderService>();
-        services.AddScoped<IAuthService,              AuthService>();
-        services.AddScoped<ICampaignService,          CampaignService>();
-        services.AddScoped<IHeroSectionService,       HeroSectionService>();
-        services.AddScoped<IDiscountCodeService,      DiscountCodeService>();
-        services.AddScoped<ICartService,              CartService>();
-        services.AddScoped<IWishlistService,          WishlistService>();
-        services.AddScoped<IAddressService,           AddressService>();
-        services.AddScoped<IAdminService,            AdminService>();
-        services.AddScoped<IReviewService,           ReviewService>();
-        services.AddScoped<IContactService,          ContactService>();
+        services.AddScoped<IOrderService,OrderService>();
+        services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<ICampaignService,CampaignService>();
+        services.AddScoped<IHeroSectionService,HeroSectionService>();
+        services.AddScoped<IDiscountCodeService,DiscountCodeService>();
+        services.AddScoped<ICartService,CartService>();
+        services.AddScoped<IWishlistService,WishlistService>();
+        services.AddScoped<IAddressService,AddressService>();
+        services.AddScoped<IAdminService,AdminService>();
+        services.AddScoped<IReviewService,ReviewService>();
+        services.AddScoped<IContactService,ContactService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+
     }
 }

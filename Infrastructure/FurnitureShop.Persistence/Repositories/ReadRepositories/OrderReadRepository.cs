@@ -11,35 +11,35 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
 {
     public OrderReadRepository(AppDbContext context) : base(context) { }
 
-    public async Task<IEnumerable<Order>> GetByUserIdAsync(string userId)
+    public async Task<IEnumerable<Order>> GetByUserIdAsync(string userId, string lang)
         => await Table
             .Where(x => x.UserId == userId)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
-                    .ThenInclude(p => p!.Translations)
+                    .ThenInclude(p => p!.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
                     .ThenInclude(p => p!.Images.Where(img => img.IsPrimary))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Collection)
-                    .ThenInclude(c => c!.Translations)
+                    .ThenInclude(c => c!.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Address)
             .Include(x => x.DeliveryInfo)
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 
-    public async Task<Order?> GetWithDetailsAsync(int id)
+    public async Task<Order?> GetWithDetailsAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
-                    .ThenInclude(p => p!.Translations)
+                    .ThenInclude(p => p!.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Items)
                 .ThenInclude(i => i.Product)
                     .ThenInclude(p => p!.Images)
             .Include(x => x.Items)
                 .ThenInclude(i => i.Collection)
-                    .ThenInclude(c => c!.Translations)
+                    .ThenInclude(c => c!.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Address)
             .Include(x => x.DeliveryInfo)
             .Include(x => x.DiscountCode)

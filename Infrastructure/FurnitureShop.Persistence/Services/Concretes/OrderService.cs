@@ -75,7 +75,7 @@ public class OrderService : IOrderService
     public async Task<IEnumerable<OrderDto>> GetUserOrdersAsync(string userId)
     {
         _log.Information("İstifadəçinin sifarişləri sorğusu — UserId: {UserId}", userId);
-        var orders = await _readRepo.GetByUserIdAsync(userId);
+        var orders = await _readRepo.GetByUserIdAsync(userId, Lang);
         return _mapper.Map<IEnumerable<OrderDto>>(orders);
     }
 
@@ -83,7 +83,7 @@ public class OrderService : IOrderService
     {
         _log.Information("Sifariş detalları sorğusu — OrderId: {OrderId} UserId: {UserId}", id, userId);
 
-        var order = await _readRepo.GetWithDetailsAsync(id);
+        var order = await _readRepo.GetWithDetailsAsync(id, Lang);
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
@@ -221,7 +221,7 @@ public class OrderService : IOrderService
                 }
             }
 
-            var cart = await _cartReadRepo.GetByUserIdAsync(userId);
+            var cart = await _cartReadRepo.GetByUserIdAsync(userId, Lang);
             if (cart is not null)
             {
                 cart.Items.Clear();
@@ -303,7 +303,7 @@ public class OrderService : IOrderService
     {
         _log.Information("Sifariş ləğv edilmə tələbi — OrderId: {OrderId} UserId: {UserId}", id, userId);
 
-        var order = await _readRepo.GetWithDetailsAsync(id);
+        var order = await _readRepo.GetWithDetailsAsync(id, Lang);
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
@@ -399,7 +399,7 @@ public class OrderService : IOrderService
 
     public async Task UpdateStatusAsync(int id, UpdateOrderStatusDto dto)
     {
-        var order = await _readRepo.GetWithDetailsAsync(id);
+        var order = await _readRepo.GetWithDetailsAsync(id, Lang);
         if (order is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "OrderNotFound"));
 
