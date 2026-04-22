@@ -4,7 +4,7 @@ namespace FurnitureShop.Domain.Entities.Concretes.Translation
     {
         public int Id { get; set; }
         public int CollectionId { get; set; }
-        public string? Lang { get; set; }        // "az", "en", "ru"
+        public string? Lang { get; set; }       
         public string? Name { get; set; }
         public string? Description { get; set; }
 

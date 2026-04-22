@@ -106,7 +106,6 @@ public class ProductService : IProductService
             if (product is null)
                 throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-            // ── Biznes məntiq: Silinmiş məhsul göstərilmir ──────────────
             if (product.IsDeleted)
                 throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
@@ -156,7 +155,6 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetByPriceRangeAsync(decimal min, decimal max, PaginationParams pagination)
     {
-        // ── Biznes məntiq: Qiymət aralığı düzgün olmalıdır ─────────────
         if (min < 0 || max < 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
@@ -198,34 +196,28 @@ public class ProductService : IProductService
     {
         _log.Information("Yeni məhsul yaradılır — Kateqoriya: {CategoryId} Qiymət: {Price}", dto.FurnitureCategoryId, dto.Price);
 
-        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
         if (dto.Price <= 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
 
-        // ── Biznes məntiq: Stok mənfi ola bilməz ────────────────────────
         if (dto.Stock < 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "stock", new List<string> { "Stok mənfi ola bilməz" } } });
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(Lang, "AllLangsRequired") } } });
 
-        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
         if (dto.PriceExtra.HasValue && dto.PriceExtra >= dto.Price)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "priceExtra", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
 
-        // ── Biznes məntiq: Ən azı 1 şəkil lazımdır ──────────────────────
         if (!dto.ImageUrls.Any())
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "images", new List<string> { ValidationMessages.Get(Lang, "MinCount", "Şəkillər", 1) } } });
 
-        // ── Biznes məntiq: Yalnız 1 əsas şəkil ola bilər ────────────────
         if (dto.ImageUrls.Count(i => i.IsPrimary) != 1)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "images", new List<string> { "Məhsulun tam olaraq 1 əsas şəkli olmalıdır" } } });
@@ -251,22 +243,17 @@ public class ProductService : IProductService
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-        // ── Biznes məntiq: Silinmiş məhsul yenilənə bilməz ─────────────
         if (product.IsDeleted)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "product", new List<string> { ValidationMessages.Get(Lang, "ProductDeleted") } } });
 
-        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
         if (dto.Price <= 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "price", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
-
-        // ── Biznes məntiq: Stok mənfi ola bilməz ────────────────────────
         if (dto.Stock < 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "stock", new List<string> { "Stok mənfi ola bilməz" } } });
 
-        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
         if (dto.PriceExtra.HasValue && dto.PriceExtra >= dto.Price)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "priceExtra", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
@@ -320,7 +307,6 @@ public class ProductService : IProductService
             .OrderBy(c => c.Name)
             .ToListAsync();
 
-        // Eyni ad amma fərqli hex ola bilər — adına görə deduplicate et
         return colors
             .GroupBy(c => c.Name.Trim().ToLower())
             .Select(g => g.First())
@@ -335,11 +321,9 @@ public class ProductService : IProductService
         if (product is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-        // ── Biznes məntiq: Artıq silinmiş məhsul yenidən silinə bilməz ──
         if (product.IsDeleted)
             throw new NotFoundException(ValidationMessages.Get(Lang, "ProductNotFound"));
 
-        // ── Biznes məntiq: Aktiv sifarişi olan məhsul silinə bilməz ─────
         var hasActiveOrders = await _db.OrderItems
             .AnyAsync(oi => oi.ProductId == id &&
                       oi.Order.Status != OrderStatus.Cancelled &&
@@ -349,7 +333,6 @@ public class ProductService : IProductService
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "product", new List<string> { ValidationMessages.Get(Lang, "ProductHasActiveOrders") } } });
 
-        // ── Soft delete: fiziki silmək əvəzinə IsDeleted = true ─────────
         product.IsDeleted = true;
         _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();

@@ -9,7 +9,6 @@ public class DeliveryInfo : BaseEntity
 
     public DeliveryType DeliveryType { get; set; }
 
-    // Admin razılaşdıqdan sonra təyin edir (müştəri seçmir)
     public DateTime? ScheduledDate { get; set; }
     public string? TimeSlot { get; set; }
 
@@ -22,6 +21,5 @@ public class DeliveryInfo : BaseEntity
 
     public DeliveryStatus Status { get; set; } = DeliveryStatus.Scheduled;
 
-    // Navigation
     public Order Order { get; set; } = null!;
 }

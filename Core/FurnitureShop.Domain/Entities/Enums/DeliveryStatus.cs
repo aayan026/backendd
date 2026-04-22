@@ -8,9 +8,9 @@ namespace FurnitureShop.Domain.Entities.Enums;
 
 public enum DeliveryStatus
 {
-    Scheduled = 1,    // Planlaşdırıldı
-    OutForDelivery = 2, // Yoldadır
-    Delivered = 3,    // Çatdırıldı
-    Failed = 4,       // Çatdırılmadı (evdə yox idi)
-    Rescheduled = 5   // Yenidən planlaşdırıldı
+    Scheduled = 1,    
+    OutForDelivery = 2, 
+    Delivered = 3,   
+    Failed = 4,       
+    Rescheduled = 5 
 }

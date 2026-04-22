@@ -10,7 +10,7 @@ namespace FurnitureShop.Domain.Entities.Concretes;
 public class Address :BaseEntity
 {
     public string UserId { get; set; } = null!;
-    public string Label { get; set; } = null!;       // "Ev", "İş"
+    public string Label { get; set; } = null!;     
     public string ContactName { get; set; } = null!;
     public string Phone { get; set; } = null!;
     public string City { get; set; } = null!;

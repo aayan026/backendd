@@ -158,12 +158,12 @@ public class MappingProfile : Profile
             .ForMember(d => d.MonthlyPayment, o => o.MapFrom(s => s.MonthlyPayment))
             .ForMember(d => d.DeliveryInfo, o => o.Ignore());
 
-        // ── Address ───────────────────────────────────────────────────────
+        // ── Address 
         CreateMap<Address, AddressDto>();
         CreateMap<CreateAddressDto, Address>();
         CreateMap<UpdateAddressDto, Address>();
 
-        // ── Cart ──────────────────────────────────────────────────────────
+        // ── Cart 
         CreateMap<CartItem, CartItemDto>()
             .ForMember(d => d.ProductName, o => o.MapFrom(s =>
                 s.Product != null && s.Product.Translations.Any()
@@ -191,7 +191,7 @@ public class MappingProfile : Profile
         CreateMap<Cart, CartDto>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items));
 
-        // ── Wishlist ──────────────────────────────────────────────────────
+        // ── Wishlist 
         CreateMap<WishlistItem, WishlistItemDto>()
             .ForMember(d => d.ProductName, o => o.MapFrom(s =>
                 s.Product != null && s.Product.Translations.Any()
@@ -211,7 +211,7 @@ public class MappingProfile : Profile
         CreateMap<Wishlist, WishlistDto>()
             .ForMember(d => d.Items, o => o.MapFrom(s => s.Items));
 
-        // ── Campaign ──────────────────────────────────────────────────────
+        // ── Campaign 
         CreateMap<Campaign, CampaignDto>()
             .ForMember(d => d.Title, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null
@@ -230,7 +230,7 @@ public class MappingProfile : Profile
         CreateMap<CreateCampaignDto, Campaign>()
             .ForMember(d => d.Translations, o => o.Ignore());
 
-        // ── HeroSection ───────────────────────────────────────────────────
+        // HeroSection 
         CreateMap<HeroSection, HeroSectionDto>()
             .ForMember(d => d.Title, o => o.MapFrom(s =>
                 s.Translations.FirstOrDefault() != null

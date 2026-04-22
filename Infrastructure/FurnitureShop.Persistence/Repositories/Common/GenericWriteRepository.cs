@@ -25,7 +25,6 @@ public class GenericWriteRepository<T> : GenericRepository<T>, IGenericWriteRepo
     public void DeleteRange(IEnumerable<T> entities)
         => Table.RemoveRange(entities);
 
-    // FIX: async remove — DiscountCodeService-də await RemoveAsync istifadə olunur
     public Task RemoveAsync(T entity)
     {
         Table.Remove(entity);

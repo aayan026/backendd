@@ -15,8 +15,8 @@ public class FurnitureCategoryService : IFurnitureCategoryService
 {
     private readonly IFurnitureCategoryReadRepository  _readRepo;
     private readonly IFurnitureCategoryWriteRepository _writeRepo;
-    private readonly ILanguageService                  _langService;
-    private readonly IMapper                           _mapper;
+    private readonly ILanguageService _langService;
+    private readonly IMapper _mapper;
     private static readonly ILogger _log = Log.ForContext<FurnitureCategoryService>();
 
     private string Lang => _langService.GetCurrentLanguage();
@@ -24,13 +24,13 @@ public class FurnitureCategoryService : IFurnitureCategoryService
     public FurnitureCategoryService(
         IFurnitureCategoryReadRepository  readRepo,
         IFurnitureCategoryWriteRepository writeRepo,
-        ILanguageService                  langService,
-        IMapper                           mapper)
+        ILanguageService langService,
+        IMapper mapper)
     {
-        _readRepo    = readRepo;
-        _writeRepo   = writeRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
         _langService = langService;
-        _mapper      = mapper;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<FurnitureCategoryDto>> GetAllAsync()
@@ -48,7 +48,6 @@ public class FurnitureCategoryService : IFurnitureCategoryService
     {
         _log.Information("Yeni mebel kateqoriyası yaradılır");
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
@@ -74,7 +73,6 @@ public class FurnitureCategoryService : IFurnitureCategoryService
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CategoryNotFound"));
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
@@ -102,7 +100,6 @@ public class FurnitureCategoryService : IFurnitureCategoryService
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CategoryNotFound"));
 
-        // ── Biznes məntiq: Məhsulları olan kateqoriya silinə bilməz ─────
         var activeProducts = category.Products?.Where(p => !p.IsDeleted).ToList();
         if (activeProducts is not null && activeProducts.Any())
             throw new Application.Exceptions.ValidationException(

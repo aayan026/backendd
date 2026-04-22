@@ -52,7 +52,6 @@ public class ReviewService : IReviewService
         _log.Information("Yeni rəy əlavə edilir — ProductId: {ProductId} Müəllif: {Author} Reytinq: {Rating}",
             dto.ProductId, dto.AuthorName, dto.Rating);
 
-        // Məhsulun mövcudluğunu yoxla
         var product = await _productReadRepo.GetByIdAsync(dto.ProductId);
         if (product is null)
         {
@@ -60,7 +59,6 @@ public class ReviewService : IReviewService
             throw new NotFoundException("Məhsul tapılmadı.");
         }
 
-        // Reytinq aralığını yoxla
         if (dto.Rating < 1 || dto.Rating > 5)
         {
             _log.Warning("Rəy əlavə edilə bilmədi — Yanlış reytinq — Rating: {Rating}", dto.Rating);
@@ -71,7 +69,6 @@ public class ReviewService : IReviewService
                 });
         }
 
-        // Eyni email + məhsul üçün dublikat rəy yoxla
         if (!string.IsNullOrWhiteSpace(dto.AuthorEmail))
         {
             var existing = await _readRepo.AnyAsync(r =>

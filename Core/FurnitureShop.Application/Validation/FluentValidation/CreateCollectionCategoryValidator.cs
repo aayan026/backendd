@@ -9,7 +9,6 @@ public class CreateCollectionCategoryValidator : AbstractValidator<CreateCollect
 
     public CreateCollectionCategoryValidator()
     {
-        // 3 dil məcburi
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))

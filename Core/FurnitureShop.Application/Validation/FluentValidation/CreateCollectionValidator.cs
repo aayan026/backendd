@@ -25,7 +25,6 @@ public class CreateCollectionValidator : AbstractValidator<CreateCollectionDto>
             .NotNull().WithMessage("Required|Products")
             .Must(x => x.Count > 0).WithMessage("MinCount|Products|1");
 
-        // 3 dil məcburi
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))

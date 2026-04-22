@@ -25,8 +25,6 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.Depth).HasColumnType("decimal(8,2)");
         builder.Property(x => x.Weight).HasColumnType("decimal(8,2)");
 
-        // Optimistic concurrency token — [Timestamp] atributu EF üçün kifayətdir,
-        // lakin explicit konfiqurasiya daha aydındır
         builder.Property(x => x.RowVersion)
             .IsRowVersion()
             .IsConcurrencyToken();

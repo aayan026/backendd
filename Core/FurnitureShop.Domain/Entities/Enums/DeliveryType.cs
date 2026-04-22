@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 namespace FurnitureShop.Domain.Entities.Enums;
 public enum DeliveryType
 {
-    DoorDelivery = 1,       // Yalnız qapıya qədər
-    RoomDelivery = 2,       // Otağa aparırlar
-    AssemblyIncluded = 3    // Otağa + quraşdırma
+    DoorDelivery = 1,     
+    RoomDelivery = 2,       
+    AssemblyIncluded = 3  
 }
 

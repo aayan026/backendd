@@ -56,13 +56,11 @@ public class AuthService : IAuthService
         var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
         if (!isPasswordValid)
         {
-            // Uğursuz cəhdi qeydə al — 5 cəhddən sonra hesab kilidlənir (Identity konfiqurасiyası)
             await _userManager.AccessFailedAsync(user);
             _log.Warning("Login uğursuz — Yanlış şifrə — UserId: {UserId}", user.Id);
             throw new UnauthorizedException(ValidationMessages.Get(Lang, "InvalidCredentials"));
         }
 
-        // Uğurlu girişdə sayacı sıfırla
         await _userManager.ResetAccessFailedCountAsync(user);
 
         var result = await CreateTokenAndSaveAsync(user);
@@ -171,7 +169,6 @@ public class AuthService : IAuthService
 
     public async Task<TokenResponseDto> RefreshTokenAsync(TokenResponseDto request)
     {
-        // DB-dəki hash ilə müqayisə et
         var incomingHash = AppUser.HashRefreshToken(request.RefreshToken);
 
         var user = await _userManager.Users
@@ -192,7 +189,6 @@ public class AuthService : IAuthService
         var newAccessToken  = await _tokenService.CreateAccessTokenAsync(user);
         var newRefreshToken = _tokenService.CreateRefreshToken();
 
-        // Yeni token-in hash-ini saxla
         user.RefreshToken           = AppUser.HashRefreshToken(newRefreshToken);
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);
@@ -201,7 +197,7 @@ public class AuthService : IAuthService
         return new TokenResponseDto
         {
             AccessToken  = newAccessToken,
-            RefreshToken = newRefreshToken,   // Plain text yalnız client-ə göndərilir
+            RefreshToken = newRefreshToken,   
             ExpireDate   = DateTime.UtcNow.AddMinutes(15)
         };
     }
@@ -226,7 +222,6 @@ public class AuthService : IAuthService
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user is null)
         {
-            // İstifadəçi mövcud deyilsə cavab dəyişmir — timing attack yoxdur
             _log.Warning("Şifrə sıfırlama — İstifadəçi tapılmadı — Email: {Email}", dto.Email);
             return;
         }
@@ -264,7 +259,6 @@ public class AuthService : IAuthService
             throw new Application.Exceptions.ValidationException(errors);
         }
 
-        // Şifrə dəyişdikdən sonra bütün aktiv sessionları ləğv et
         user.RefreshToken           = null;
         user.RefreshTokenExpiryTime = DateTime.MinValue;
         await _userManager.UpdateAsync(user);
@@ -276,7 +270,6 @@ public class AuthService : IAuthService
     {
         var tokenResponse = await _tokenService.CreateTokenAsync(user);
 
-        // Plain text token client-ə göndərilir, DB-ə sadəcə hash yazılır
         user.RefreshToken           = AppUser.HashRefreshToken(tokenResponse.RefreshToken);
         user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
         await _userManager.UpdateAsync(user);

@@ -49,7 +49,6 @@ public class CartService : ICartService
 
     public async Task AddItemAsync(string userId, AddToCartDto dto)
     {
-        // ── Biznes məntiq: Məhsul və ya kolleksiya seçilməlidir ──────────
         if (dto.ProductId is null && dto.CollectionId is null)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>
@@ -57,7 +56,6 @@ public class CartService : ICartService
                     { "item", new List<string> { ValidationMessages.Get(lang, "ProductOrCollectionRequired") } }
                 });
 
-        // ── Biznes məntiq: Miqdar 1-dən az ola bilməz ───────────────────
         if (dto.Quantity < 1)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>
@@ -65,7 +63,6 @@ public class CartService : ICartService
                     { "quantity", new List<string> { ValidationMessages.Get(lang, "GreaterThanZero", "Miqdar") } }
                 });
 
-        // ── Biznes məntiq: Məhsulun mövcudluğu və stoku yoxlanır ─────────
         if (dto.ProductId.HasValue)
         {
             var product = await _productReadRepo.GetByIdAsync(dto.ProductId.Value);
@@ -73,7 +70,6 @@ public class CartService : ICartService
             if (product is null || product.IsDeleted)
                 throw new NotFoundException(ValidationMessages.Get(lang, "ProductNotFound"));
 
-            // Stok = 0 → satış olmaz
             if (product.Stock <= 0)
                 throw new Application.Exceptions.ValidationException(
                     new Dictionary<string, List<string>>
@@ -81,7 +77,6 @@ public class CartService : ICartService
                         { "stock", new List<string> { ValidationMessages.Get(lang, "ProductOutOfStock", product.Translations.FirstOrDefault()?.Name ?? "Məhsul") } }
                     });
 
-            // Seçilən miqdar mövcud stokdan çox ola bilməz
             if (dto.Quantity > product.Stock)
                 throw new Application.Exceptions.ValidationException(
                     new Dictionary<string, List<string>>
@@ -90,7 +85,6 @@ public class CartService : ICartService
                     });
         }
 
-        // ── Biznes məntiq: Kolleksiyanın mövcudluğu yoxlanır ────────────
         if (dto.CollectionId.HasValue)
         {
             var collection = await _collectionReadRepo.GetByIdAsync(dto.CollectionId.Value);
@@ -114,7 +108,6 @@ public class CartService : ICartService
 
         if (existing is not null)
         {
-            // ── Biznes məntiq: Toplam miqdar stoku keçməsin ──────────────
             if (dto.ProductId.HasValue)
             {
                 var product = await _productReadRepo.GetByIdAsync(dto.ProductId.Value);
@@ -168,7 +161,6 @@ public class CartService : ICartService
         }
         else
         {
-            // ── Biznes məntiq: Yeni miqdar stoku keçməsin ───────────────
             if (item.ProductId.HasValue)
             {
                 var product = await _productReadRepo.GetByIdAsync(item.ProductId.Value);

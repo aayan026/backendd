@@ -54,7 +54,6 @@ public class CollectionService : ICollectionService
         if (collection is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
 
-        // ── Biznes məntiq: Silinmiş kolleksiya göstərilmir ───────────────
         if (collection.IsDeleted)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
 
@@ -65,24 +64,20 @@ public class CollectionService : ICollectionService
     {
         _log.Information("Yeni kolleksiya yaradılır");
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(Lang, "AllLangsRequired") } } });
 
-        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
         if (dto.TotalPrice <= 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "totalPrice", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
 
-        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
         if (dto.DiscountPrice.HasValue && dto.DiscountPrice >= dto.TotalPrice)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "discountPrice", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
 
-        // ── Biznes məntiq: Məhsulların DB-də mövcudluğu yoxlanır ─────────
         var products = new List<Product>();
         foreach (var pid in dto.ProductIds)
         {
@@ -116,12 +111,10 @@ public class CollectionService : ICollectionService
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "collection", new List<string> { ValidationMessages.Get(Lang, "CollectionNotFound") } } });
 
-        // ── Biznes məntiq: Qiymət müsbət olmalıdır ──────────────────────
         if (dto.TotalPrice <= 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "totalPrice", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Qiymət") } } });
 
-        // ── Biznes məntiq: Endirimli qiymət əsas qiymətdən az olmalıdır ─
         if (dto.DiscountPrice.HasValue && dto.DiscountPrice >= dto.TotalPrice)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "discountPrice", new List<string> { ValidationMessages.Get(Lang, "DiscountLessThanTotal") } } });
@@ -162,7 +155,6 @@ public class CollectionService : ICollectionService
         if (collection.IsDeleted)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionNotFound"));
 
-        // ── Biznes məntiq: Aktiv sifarişi olan kolleksiya silinə bilməz ──
         var hasActiveOrders = await _db.OrderItems
             .AnyAsync(oi => oi.CollectionId == id &&
                       oi.Order.Status != OrderStatus.Cancelled &&
@@ -172,7 +164,6 @@ public class CollectionService : ICollectionService
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "collection", new List<string> { ValidationMessages.Get(Lang, "CollectionHasActiveOrders") } } });
 
-        // ── Soft delete ──────────────────────────────────────────────────
         collection.IsDeleted = true;
         _writeRepo.Update(collection);
         await _writeRepo.SaveChangesAsync();

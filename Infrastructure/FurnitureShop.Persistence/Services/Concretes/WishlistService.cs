@@ -49,7 +49,6 @@ public class WishlistService : IWishlistService
 
     public async Task AddItemAsync(string userId, int? productId, int? collectionId)
     {
-        // ── Biznes məntiq: Məhsul və ya kolleksiya seçilməlidir ──────────
         if (productId is null && collectionId is null)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>
@@ -57,7 +56,6 @@ public class WishlistService : IWishlistService
                     { "item", new List<string> { ValidationMessages.Get(lang, "ProductOrCollectionRequired") } }
                 });
 
-        // ── Biznes məntiq: Məhsulun DB-də mövcudluğu yoxlanır ───────────
         if (productId.HasValue)
         {
             var product = await _productReadRepo.GetByIdAsync(productId.Value);
@@ -65,7 +63,6 @@ public class WishlistService : IWishlistService
                 throw new NotFoundException(ValidationMessages.Get(lang, "WishlistProductNotFound"));
         }
 
-        // ── Biznes məntiq: Kolleksiyanın DB-də mövcudluğu yoxlanır ──────
         if (collectionId.HasValue)
         {
             var collection = await _collectionReadRepo.GetByIdAsync(collectionId.Value);
@@ -81,7 +78,6 @@ public class WishlistService : IWishlistService
             await _writeRepo.SaveChangesAsync();
         }
 
-        // ── Biznes məntiq: Eyni məhsul iki dəfə əlavə edilə bilməz ──────
         var alreadyExists = wishlist.Items.Any(x =>
             x.ProductId    == productId &&
             x.CollectionId == collectionId);
@@ -89,7 +85,7 @@ public class WishlistService : IWishlistService
         if (alreadyExists)
         {
             _log.Information("Məhsul artıq istək siyahısındadır — UserId: {UserId} ProductId: {ProductId}", userId, productId);
-            return; // Xəta atmırıq, sadəcə keçirik
+            return;
         }
 
         wishlist.Items.Add(new WishlistItem

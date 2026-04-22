@@ -17,11 +17,7 @@ public class ContactController : BaseApiController
         _lang = lang;
     }
 
-    /// <summary>
-    /// Contact formu göndər.
-    /// Bütün validasiya FluentValidation (ValidationFilter) tərəfindən həyata keçirilir —
-    /// 3 dildə (az/en/ru) xəta mesajları avtomatik qaytarılır.
-    /// </summary>
+
     [HttpPost("send")]
     public async Task<IActionResult> Send([FromBody] ContactMessageDto dto)
     {

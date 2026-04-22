@@ -9,7 +9,6 @@ namespace FurnitureShop.Persistence.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Order tablosuna yeni sütunlar
             migrationBuilder.AddColumn<string>(
                 name: "AdminNote",
                 table: "Orders",
@@ -55,7 +54,6 @@ namespace FurnitureShop.Persistence.Migrations
                 type: "decimal(18,2)",
                 nullable: true);
 
-            // DeliveryInfo — ScheduledDate nullable et
             migrationBuilder.AlterColumn<DateTime>(
                 name: "ScheduledDate",
                 table: "DeliveryInfos",

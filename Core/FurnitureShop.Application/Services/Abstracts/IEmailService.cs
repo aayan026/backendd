@@ -14,7 +14,6 @@ public interface IEmailService
         decimal total, string paymentMethod, string deliveryNote,
         bool isCustomOrder, string? customDescription, string lang);
 
-    /// <summary>Contact form — adminin emailinə bildiriş göndər</summary>
     Task SendContactNotificationAsync(
         string fromName, string fromEmail, string? fromPhone,
         string? subject, string message, string lang);

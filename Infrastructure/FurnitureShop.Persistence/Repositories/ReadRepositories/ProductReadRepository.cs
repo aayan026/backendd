@@ -87,13 +87,8 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
                 .OrderBy(x => x.DisplayOrder)
                 .AsEnumerable());
 
-    /// <summary>
-    /// Ada görə məhsul tap. Slug = ad boşluqları tire ilə əvəz edilmiş halda gəlir.
-    /// Məsələn: "velvet-lounge-sofa" → "velvet lounge sofa"
-    /// </summary>
     public async Task<Product?> GetByNameAsync(string name, string lang)
     {
-        // slug "my-product-name" → "my product name" çevirir
         var normalized = name.Replace("-", " ").ToLower();
         return await Table
             .Where(x => !x.IsDeleted &&
@@ -114,7 +109,6 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
         var minPrice = price * 0.5m;
         var maxPrice = price * 1.5m;
 
-        // Əvvəl eyni material + eyni kateqoriya + qiymət aralığı
         var query = Table
             .Where(x => !x.IsDeleted && x.Id != productId && x.FurnitureCategoryId == categoryId)
             .Where(x => x.Price >= minPrice && x.Price <= maxPrice)
@@ -125,7 +119,6 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
 
         var results = await query.ToListAsync();
 
-        // Material varsa — eyni material önə çıxsın
         if (!string.IsNullOrWhiteSpace(material))
         {
             results = results

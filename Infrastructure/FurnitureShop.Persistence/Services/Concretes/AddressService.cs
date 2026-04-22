@@ -57,7 +57,6 @@ public class AddressService : IAddressService
         var existing = await _readRepo.GetByUserIdAsync(userId);
         var isFirst  = !existing.Any();
 
-        // ── Biznes məntiq: İstifadəçi maksimum 5 ünvan əlavə edə bilər ──
         if (existing.Count() >= MaxAddressLimit)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>>

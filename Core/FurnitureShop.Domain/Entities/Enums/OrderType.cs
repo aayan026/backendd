@@ -8,6 +8,6 @@ namespace FurnitureShop.Domain.Entities.Enums;
 
 public enum OrderType
 {
-    Standard,     // Hazır məhsul
-    Custom        // Xüsusi sifariş
+    Standard,    
+    Custom      
 }

@@ -16,7 +16,6 @@ public class EmailService : IEmailService
         _config = config;
     }
 
-    // ── Əsas göndərmə metodu ─────────────────────────────────────────────
     public async Task SendAsync(SendEmailDto dto)
     {
         var username = _config["Email:Username"];
@@ -50,7 +49,6 @@ public class EmailService : IEmailService
         await client.DisconnectAsync(true);
     }
 
-    // ── Şifrə sıfırlama ──────────────────────────────────────────────────
     public async Task SendForgotPasswordAsync(string toEmail, string toName, string resetToken, string lang)
     {
         var frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:5173";
@@ -78,7 +76,6 @@ public class EmailService : IEmailService
         await SendAsync(new SendEmailDto { ToEmail = toEmail, ToName = toName, Subject = subject, Body = body });
     }
 
-    // ── Sifariş təsdiq (müştəriyə) ───────────────────────────────────────
     public async Task SendOrderConfirmationAsync(string toEmail, string toName, int orderId, decimal total, string lang)
     {
         var frontendUrl = _config["App:FrontendUrl"] ?? "http://localhost:5173";
@@ -109,7 +106,6 @@ public class EmailService : IEmailService
         await SendAsync(new SendEmailDto { ToEmail = toEmail, ToName = toName, Subject = subject, Body = body });
     }
 
-    // ── Status dəyişikliyi (müştəriyə) ───────────────────────────────────
     public async Task SendOrderStatusChangedAsync(
         string toEmail, string toName, int orderId,
         string status, string? adminNote, DateTime? estimatedDelivery, string lang)
@@ -180,7 +176,6 @@ public class EmailService : IEmailService
         await SendAsync(new SendEmailDto { ToEmail = toEmail, ToName = toName, Subject = subject, Body = body });
     }
 
-    // ── Admin bildirişi (yeni sifariş) ───────────────────────────────────
     public async Task SendAdminOrderNotificationAsync(
         int orderId, string customerName, string customerEmail, string customerPhone,
         decimal total, string paymentMethod, string deliveryNote,
@@ -230,7 +225,6 @@ public class EmailService : IEmailService
         });
     }
 
-    // ── Contact form bildirişi (adminə email) ────────────────────────────
     public async Task SendContactNotificationAsync(
         string fromName, string fromEmail, string? fromPhone,
         string? subject, string message, string lang)
@@ -272,7 +266,6 @@ public class EmailService : IEmailService
         });
     }
 
-    // ── HTML Builder ─────────────────────────────────────────────────────
     private static string BuildHtml(string lang, string heading, string body1, string body2, string ctaUrl, string ctaLabel)
     {
         return BaseTemplate($@"

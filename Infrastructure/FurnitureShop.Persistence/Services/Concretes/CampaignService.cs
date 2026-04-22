@@ -44,24 +44,20 @@ public class CampaignService : ICampaignService
     {
         _log.Information("Yeni kampaniya yaradılır");
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "translations", new List<string> { ValidationMessages.Get(lang, "AllLangsRequired") } } });
 
-        // ── Biznes məntiq: Endirim faizi 1-100 arasında olmalıdır ────────
         if (dto.DiscountPercent.HasValue && (dto.DiscountPercent < 1 || dto.DiscountPercent > 100))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "discountPercent", new List<string> { ValidationMessages.Get(lang, "DiscountCodeInvalidValue") } } });
 
-        // ── Biznes məntiq: Bitiş tarixi başlama tarixindən sonra olmalıdır ──
         if (dto.StartDate != default && dto.EndDate != default && dto.EndDate <= dto.StartDate)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "endDate", new List<string> { ValidationMessages.Get(lang, "CampaignDateInvalid") } } });
 
-        // ── Biznes məntiq: Başlama tarixi gələcəkdə olmalıdır ────────────
         if (dto.StartDate != default && dto.StartDate < DateTime.UtcNow.Date)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "startDate", new List<string> { ValidationMessages.Get(lang, "FutureDate", "Başlama tarixi") } } });
@@ -90,12 +86,10 @@ public class CampaignService : ICampaignService
         if (campaign is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CampaignNotFound"));
 
-        // ── Biznes məntiq: Endirim faizi 1-100 arasında olmalıdır ────────
         if (dto.DiscountPercent.HasValue && (dto.DiscountPercent < 1 || dto.DiscountPercent > 100))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "discountPercent", new List<string> { ValidationMessages.Get(lang, "DiscountCodeInvalidValue") } } });
 
-        // ── Biznes məntiq: Bitiş tarixi başlama tarixindən sonra olmalıdır ──
         var newStart = dto.StartDate != default ? dto.StartDate : campaign.StartDate;
         var newEnd   = dto.EndDate   != default ? dto.EndDate   : campaign.EndDate;
         if (newStart != default && newEnd != default && newEnd <= newStart)
@@ -148,7 +142,6 @@ public class CampaignService : ICampaignService
         if (campaign is null)
             throw new NotFoundException(ValidationMessages.Get(lang, "CampaignNotFound"));
 
-        // ── Biznes məntiq: Aktiv kampaniya birbaşa silinə bilməz, əvvəl deaktiv edilməlidir ──
         if (campaign.IsActive)
         {
             campaign.IsActive = false;

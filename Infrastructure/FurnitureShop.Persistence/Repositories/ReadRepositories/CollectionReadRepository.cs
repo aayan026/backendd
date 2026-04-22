@@ -20,7 +20,6 @@ public class CollectionReadRepository : GenericReadRepository<Collection>, IColl
     public async Task<Collection?> GetWithProductsAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id)
-            // FIX: update üçün bütün dillər yüklənir
             .Include(x => x.Translations)
             .Include(x => x.CollectionCategory)
                 .ThenInclude(c => c!.Translations.Where(t => t.Lang == lang))

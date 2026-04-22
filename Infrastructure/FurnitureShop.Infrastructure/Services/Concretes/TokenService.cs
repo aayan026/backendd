@@ -49,7 +49,6 @@ public class TokenService : ITokenService
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            // null-safe: email boş ola bilər
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty)
         };
 

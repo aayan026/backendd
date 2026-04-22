@@ -39,7 +39,6 @@ public class CreateProductValidator : AbstractValidator<CreateProductDto>
             .NotNull().WithMessage("Required|Images")
             .Must(x => x.Count > 0).WithMessage("MinCount|Images|1");
 
-        // 3 dil məcburi: az, ru, en
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))

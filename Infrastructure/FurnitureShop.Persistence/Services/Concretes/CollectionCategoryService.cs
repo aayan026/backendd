@@ -48,7 +48,6 @@ public class CollectionCategoryService : ICollectionCategoryService
     {
         _log.Information("Yeni kolleksiya kateqoriyası yaradılır");
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
@@ -77,7 +76,6 @@ public class CollectionCategoryService : ICollectionCategoryService
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
 
-        // ── Biznes məntiq: Az, ru, en dillərinin hamısı lazımdır ─────────
         var requiredLangs = new[] { "az", "ru", "en" };
         var providedLangs = dto.Translations.Select(t => t.Lang).ToHashSet();
         if (!requiredLangs.All(l => providedLangs.Contains(l)))
@@ -105,7 +103,6 @@ public class CollectionCategoryService : ICollectionCategoryService
         if (category is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "CollectionCategoryNotFound"));
 
-        // ── Biznes məntiq: İçində aktiv kolleksiyalar olan kateqoriya silinə bilməz ──
         var activeCollections = category.Collections?.Where(c => !c.IsDeleted).ToList();
         if (activeCollections is not null && activeCollections.Any())
             throw new Application.Exceptions.ValidationException(

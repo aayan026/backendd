@@ -24,13 +24,13 @@ public class DiscountCodeService : IDiscountCodeService
     public DiscountCodeService(
         IDiscountCodeReadRepository  readRepo,
         IDiscountCodeWriteRepository writeRepo,
-        ILanguageService             langService,
-        IMapper                      mapper)
+        ILanguageService langService,
+        IMapper mapper)
     {
-        _readRepo    = readRepo;
-        _writeRepo   = writeRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
         _langService = langService;
-        _mapper      = mapper;
+        _mapper = mapper;
     }
 
     public async Task<DiscountCodeValidationResult> ValidateAsync(ValidateDiscountCodeDto dto)
@@ -58,11 +58,11 @@ public class DiscountCodeService : IDiscountCodeService
 
         return new DiscountCodeValidationResult
         {
-            IsValid        = true,
-            Message        = ValidationMessages.Get(Lang, "Success"),
+            IsValid = true,
+            Message = ValidationMessages.Get(Lang, "Success"),
             DiscountCodeId = code.Id,
             DiscountAmount = discount,
-            FinalTotal     = dto.OrderTotal - discount
+            FinalTotal = dto.OrderTotal - discount
         };
     }
 
@@ -83,23 +83,19 @@ public class DiscountCodeService : IDiscountCodeService
     {
         _log.Information("Yeni endirim kodu yaradılır — Kod: {Code}", dto.Code);
 
-        // ── Biznes məntiq: Eyni kod iki dəfə yaradıla bilməz ────────────
         var existing = await _readRepo.GetByCodeAsync(dto.Code);
         if (existing is not null)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeDuplicate") } } });
 
-        // ── Biznes məntiq: Faiz endirimi 1-100 arasında olmalıdır ────────
         if (dto.Type == DiscountType.Percent && (dto.Value < 1 || dto.Value > 100))
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "value", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeInvalidValue") } } });
 
-        // ── Biznes məntiq: Sabit endirim mənfi ola bilməz ────────────────
         if (dto.Value <= 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "value", new List<string> { ValidationMessages.Get(Lang, "GreaterThanZero", "Endirim dəyəri") } } });
 
-        // ── Biznes məntiq: Bitiş tarixi gələcək olmalıdır ────────────────
         if (dto.ExpiresAt.HasValue && dto.ExpiresAt <= DateTime.UtcNow)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "expiresAt", new List<string> { ValidationMessages.Get(Lang, "FutureDate", "Bitiş tarixi") } } });
@@ -119,7 +115,6 @@ public class DiscountCodeService : IDiscountCodeService
         if (code is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
 
-        // ── Biznes məntiq: Artıq deaktiv olan kod yenidən deaktiv edilə bilməz ──
         if (code.Status == DiscountStatus.Passive)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeAlreadyInactive") } } });
@@ -136,7 +131,6 @@ public class DiscountCodeService : IDiscountCodeService
         if (code is null)
             throw new NotFoundException(ValidationMessages.Get(Lang, "DiscountCodeNotFound"));
 
-        // ── Biznes məntiq: İstifadə edilmiş kod silinə bilməz ───────────
         if (code.UsedCount > 0)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "code", new List<string> { ValidationMessages.Get(Lang, "DiscountCodeHasBeenUsed") } } });

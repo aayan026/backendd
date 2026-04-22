@@ -13,7 +13,7 @@ public class CustomPasswordValidator : IPasswordValidator<AppUser>
             errors.Add(new IdentityError
             {
                 Code        = "PasswordContainsUserName",
-                Description = "PasswordContainsUserName"  // açar — handler lokalizasiya edir
+                Description = "PasswordContainsUserName"  
             });
 
         if (password.Contains("1234") || password.Contains("0000") || password.Contains("1111"))

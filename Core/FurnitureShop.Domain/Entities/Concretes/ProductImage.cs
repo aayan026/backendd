@@ -14,7 +14,5 @@ public class ProductImage:BaseEntity
     public string ImageUrl { get; set; } = null!;
     public bool IsPrimary { get; set; } = false;
     public int SortOrder { get; set; } = 0;
-
-    // Navigation
     public Product Product { get; set; } = null!;
 }

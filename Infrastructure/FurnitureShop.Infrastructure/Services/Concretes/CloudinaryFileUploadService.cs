@@ -83,12 +83,9 @@ public class CloudinaryFileUploadService : IFileUploadService
 
         try
         {
-            // Cloudinary URL-dən public_id çıxarırıq
-            // Nümunə: https://res.cloudinary.com/{cloud}/image/upload/v123/furnitureshop/products/abc123
             var uri = new Uri(fileUrl);
             var segments = uri.AbsolutePath.Split('/');
 
-            // "upload" sonrasındakı hissə (version + public_id)
             var uploadIndex = Array.IndexOf(segments, "upload");
             if (uploadIndex < 0 || uploadIndex + 2 >= segments.Length)
             {
@@ -96,14 +93,12 @@ public class CloudinaryFileUploadService : IFileUploadService
                 return;
             }
 
-            // Version segmentini atlayırıq (v123456789 formatında olursa)
             var afterUpload = segments.Skip(uploadIndex + 1).ToArray();
             var firstSeg = afterUpload[0];
             var publicIdSegments = firstSeg.StartsWith("v") && firstSeg.Length > 1 && char.IsDigit(firstSeg[1])
                 ? afterUpload.Skip(1).ToArray()
                 : afterUpload;
 
-            // Son seqmentdən extension-u çıxarırıq
             var lastSeg = publicIdSegments.Last();
             var dotIndex = lastSeg.LastIndexOf('.');
             if (dotIndex > 0)

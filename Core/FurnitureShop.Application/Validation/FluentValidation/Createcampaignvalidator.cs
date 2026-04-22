@@ -15,7 +15,6 @@ public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
             .LessThanOrEqualTo(100).When(x => x.DiscountPercent.HasValue)
             .WithMessage("MaxLength|DiscountPercent|100");
 
-        // FIX: >= (bugünkü tarixlə yaratmaq olar)
         RuleFor(x => x.StartDate)
             .GreaterThanOrEqualTo(DateTime.UtcNow.Date)
             .WithMessage("FutureDate|ScheduledDate");
@@ -24,7 +23,6 @@ public class CreateCampaignValidator : AbstractValidator<CreateCampaignDto>
             .GreaterThan(x => x.StartDate)
             .WithMessage("FutureDate|ScheduledDate");
 
-        // 3 dil məcburi
         RuleFor(x => x.Translations)
             .NotNull().WithMessage("Required|Translations")
             .Must(t => t != null && RequiredLangs.All(lang => t.Any(x => x.Lang == lang)))

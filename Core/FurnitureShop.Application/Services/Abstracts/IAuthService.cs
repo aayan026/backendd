@@ -11,8 +11,5 @@ public interface IAuthService
     Task ForgotPasswordAsync(ForgotPasswordDto dto);
     Task ResetPasswordAsync(ResetPasswordDto dto);
 
-    /// <summary>
-    /// Google ID Token ilə daxil ol — user yoxdursa avtomatik register edir
-    /// </summary>
     Task<TokenResponseDto> GoogleLoginAsync(GoogleLoginDto dto);
 }

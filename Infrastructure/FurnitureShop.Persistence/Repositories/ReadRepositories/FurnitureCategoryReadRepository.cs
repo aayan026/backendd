@@ -18,7 +18,6 @@ public class FurnitureCategoryReadRepository : GenericReadRepository<FurnitureCa
     public async Task<FurnitureCategory?> GetWithProductsAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id)
-            // FIX: bütün dillər yüklənir ki update zamanı clear + refill işləsin
             .Include(x => x.Translations)
             .Include(x => x.Products.Where(p => !p.IsDeleted))
                 .ThenInclude(p => p.Translations.Where(t => t.Lang == lang))

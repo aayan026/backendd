@@ -7,12 +7,7 @@ using System.Text.Json;
 
 namespace FurnitureShop.Persistence.Services.Concretes;
 
-/// <summary>
-/// Contact form məlumatlarını:
-///   1) Admin emailinə göndərir (IEmailService vasitəsilə)
-///   2) Admin telefon nömrəsinə WhatsApp/SMS API vasitəsilə göndərir
-///      (appsettings-dəki "Contact:AdminPhone" konfiqurasi olduqda)
-/// </summary>
+
 public class ContactService : IContactService
 {
     private readonly IEmailService   _email;
@@ -29,7 +24,6 @@ public class ContactService : IContactService
     {
         var lang = dto.Lang ?? "az";
 
-        // ── 1. Admin emailinə bildiriş ──────────────────────────────────
         try
         {
             await _email.SendContactNotificationAsync(
@@ -45,11 +39,8 @@ public class ContactService : IContactService
         catch (Exception ex)
         {
             _log.Error(ex, "Contact email göndərilə bilmədi — From: {Email}", dto.Email);
-            // email xətası cavab qaytarmağı bloklamasın
         }
 
-        // ── 2. Admin telefona SMS / WhatsApp ─────────────────────────────
-        // appsettings.json-da "Contact:AdminPhone" varsa göndər
         var adminPhone = _config["Contact:AdminPhone"];
         if (!string.IsNullOrWhiteSpace(adminPhone))
         {
@@ -64,18 +55,11 @@ public class ContactService : IContactService
         }
     }
 
-    /// <summary>
-    /// SMS göndərmək üçün iki seçim dəstəklənir:
-    ///   A) Twilio  — appsettings: Twilio:AccountSid + Twilio:AuthToken + Twilio:FromPhone
-    ///   B) Eskiz   — appsettings: Eskiz:Email + Eskiz:Password + Eskiz:From  (AZ lokal)
-    ///
-    /// Heç biri konfiqurasiya edilməyibsə, xəbərdarlıq logu yazılır.
-    /// </summary>
+
     private async Task SendSmsNotificationAsync(string toPhone, ContactMessageDto dto)
     {
         var smsText = BuildSmsText(dto);
 
-        // ── A. Twilio ───────────────────────────────────────────────────
         var twilioSid   = _config["Twilio:AccountSid"];
         var twilioToken = _config["Twilio:AuthToken"];
         var twilioFrom  = _config["Twilio:FromPhone"];
@@ -89,7 +73,6 @@ public class ContactService : IContactService
             return;
         }
 
-        // ── B. Eskiz SMS (Azerbaijan) ───────────────────────────────────
         var eskizEmail    = _config["Eskiz:Email"];
         var eskizPassword = _config["Eskiz:Password"];
         var eskizFrom     = _config["Eskiz:From"] ?? "4546";
@@ -116,7 +99,6 @@ public class ContactService : IContactService
             sb.Append($"Tel: {dto.Phone}\n");
         if (!string.IsNullOrWhiteSpace(dto.Subject))
             sb.Append($"Movzu: {dto.Subject}\n");
-        // SMS limit — mesajı 100 simvola qədər kəs
         var msg = dto.Message?.Length > 100
             ? dto.Message[..100] + "..."
             : dto.Message;
@@ -124,7 +106,6 @@ public class ContactService : IContactService
         return sb.ToString();
     }
 
-    // ── Twilio REST API ───────────────────────────────────────────────────
     private static async Task SendViaTwilioAsync(
         string accountSid, string authToken, string from, string to, string body)
     {
@@ -149,13 +130,11 @@ public class ContactService : IContactService
         response.EnsureSuccessStatusCode();
     }
 
-    // ── Eskiz.uz REST API (AZ/UZ region) ─────────────────────────────────
     private static async Task SendViaEskizAsync(
         string email, string password, string from, string to, string text)
     {
         using var client = new HttpClient();
 
-        // 1. Token al
         var tokenResp = await client.PostAsync(
             "https://notify.eskiz.uz/api/auth/login",
             new FormUrlEncodedContent(new Dictionary<string, string>
@@ -172,11 +151,9 @@ public class ContactService : IContactService
             .GetProperty("token")
             .GetString() ?? throw new Exception("Eskiz token alına bilmədi");
 
-        // 2. SMS göndər
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-        // Azerbaycan nömrəsi üçün country_code = 994
         var smsResp = await client.PostAsync(
             "https://notify.eskiz.uz/api/message/sms/send",
             new FormUrlEncodedContent(new Dictionary<string, string>
