@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using FurnitureShop.Application.Dtos.User;
 
 namespace FurnitureShop.Application.Validation.FluentValidation;
@@ -15,5 +15,9 @@ public class ChangePasswordValidator : AbstractValidator<ChangePasswordDto>
             .MinimumLength(8).WithMessage("MinLength|Password|8")
             .Matches("[A-Z]").WithMessage("PasswordWeak|Password")
             .Matches("[0-9]").WithMessage("PasswordWeak|Password");
+
+        RuleFor(x => x.ConfirmNewPassword)
+            .NotEmpty().WithMessage("Required|ConfirmPassword")
+            .Equal(x => x.NewPassword).WithMessage("PasswordConfirmMismatch");
     }
 }

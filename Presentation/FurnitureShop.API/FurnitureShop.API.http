@@ -2,5 +2,3 @@
 
 GET {{FurnitureShop.API_HostAddress}}/weatherforecast/
 Accept: application/json
-
-###

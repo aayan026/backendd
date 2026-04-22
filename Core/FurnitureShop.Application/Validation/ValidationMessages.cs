@@ -72,6 +72,15 @@ public static class ValidationMessages
             ["UserUnbanned"]                   = "İstifadəçinin bloku açıldı",
             ["GoogleTokenInvalid"]             = "Google token etibarsızdır",
             ["GoogleNotConfigured"]            = "Google OAuth konfiqurasiya edilməyib",
+            ["PasswordConfirmMismatch"]        = "Şifrələr uyğun gəlmir",
+            ["ContactNameRequired"]            = "Ad boş ola bilməz",
+            ["ContactNameMaxLength"]           = "Ad ən çox 100 simvol ola bilər",
+            ["ContactEmailRequired"]           = "Email boş ola bilməz",
+            ["ContactEmailInvalid"]            = "Email formatı yanlışdır",
+            ["ContactMessageRequired"]         = "Mesaj boş ola bilməz",
+            ["ContactMessageMaxLength"]        = "Mesaj ən çox 2000 simvol ola bilər",
+            ["ContactPhoneInvalid"]            = "Telefon nömrəsi yanlışdır",
+            ["ContactSent"]                    = "Mesajınız göndərildi. Ən qısa zamanda sizinlə əlaqə saxlayacağıq.",
         },
         ["ru"] = new()
         {
@@ -141,6 +150,15 @@ public static class ValidationMessages
             ["UserUnbanned"]                   = "Блокировка пользователя снята",
             ["GoogleTokenInvalid"]             = "Токен Google недействителен",
             ["GoogleNotConfigured"]            = "Google OAuth не настроен",
+            ["PasswordConfirmMismatch"]        = "Пароли не совпадают",
+            ["ContactNameRequired"]            = "Имя не может быть пустым",
+            ["ContactNameMaxLength"]           = "Имя не может превышать 100 символов",
+            ["ContactEmailRequired"]           = "Email не может быть пустым",
+            ["ContactEmailInvalid"]            = "Неверный формат email",
+            ["ContactMessageRequired"]         = "Сообщение не может быть пустым",
+            ["ContactMessageMaxLength"]        = "Сообщение не может превышать 2000 символов",
+            ["ContactPhoneInvalid"]            = "Неверный номер телефона",
+            ["ContactSent"]                    = "Ваше сообщение отправлено. Мы свяжемся с вами в ближайшее время.",
         },
         ["en"] = new()
         {
@@ -210,6 +228,15 @@ public static class ValidationMessages
             ["UserUnbanned"]                   = "User ban has been lifted",
             ["GoogleTokenInvalid"]             = "Google token is invalid",
             ["GoogleNotConfigured"]            = "Google OAuth is not configured",
+            ["PasswordConfirmMismatch"]        = "Passwords do not match",
+            ["ContactNameRequired"]            = "Name cannot be empty",
+            ["ContactNameMaxLength"]           = "Name cannot exceed 100 characters",
+            ["ContactEmailRequired"]           = "Email cannot be empty",
+            ["ContactEmailInvalid"]            = "Invalid email format",
+            ["ContactMessageRequired"]         = "Message cannot be empty",
+            ["ContactMessageMaxLength"]        = "Message cannot exceed 2000 characters",
+            ["ContactPhoneInvalid"]            = "Invalid phone number",
+            ["ContactSent"]                    = "Your message has been sent. We will get back to you shortly.",
         }
     };
 

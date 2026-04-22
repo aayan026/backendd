@@ -3,26 +3,19 @@ using System.Text.Json;
 
 namespace FurnitureShop.API.Middlewares;
 
-/// <summary>
-/// Auth endpoint-ləri üçün sadə sliding-window rate limiter.
-/// Hər IP üçün ayrıca sayac tutulur.
-/// Production-da AspNetCoreRateLimit paketi və ya Redis-based limiter istifadə edin.
-/// </summary>
 public class RateLimitingMiddleware
 {
-    private readonly RequestDelegate              _next;
+    private readonly RequestDelegate _next;
     private readonly ILogger<RateLimitingMiddleware> _logger;
 
-    // IP:path → (window_başlangıcı, sorğu_sayı)
     private static readonly ConcurrentDictionary<string, (DateTime WindowStart, int Count)> _store = new();
 
-    // Qorunan endpoint-lər: (maksimum_sorğu, zaman_pəncərəsi)
     private static readonly Dictionary<string, (int Max, TimeSpan Window)> _rules = new()
     {
-        { "/api/auth/login",           (10, TimeSpan.FromMinutes(15)) },
-        { "/api/auth/register",        (5,  TimeSpan.FromMinutes(15)) },
+        { "/api/auth/login",           (15, TimeSpan.FromMinutes(15)) },
+        { "/api/auth/register",        (10,  TimeSpan.FromMinutes(15)) },
         { "/api/auth/forgot-password", (5,  TimeSpan.FromHours(1))    },
-        { "/api/auth/refresh",         (20, TimeSpan.FromMinutes(15)) },
+        { "/api/auth/refresh",         (50, TimeSpan.FromMinutes(15)) },
         { "/api/auth/google",          (10, TimeSpan.FromMinutes(15)) },
     };
 
@@ -35,6 +28,12 @@ public class RateLimitingMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+
+        if (context.Request.Method == "OPTIONS")
+        {
+            await _next(context);
+            return;
+        }
 
         if (!_rules.TryGetValue(path, out var rule))
         {
@@ -51,7 +50,6 @@ public class RateLimitingMiddleware
             _ => (now, 1),
             (_, existing) =>
             {
-                // Zaman pəncərəsi keçibsə sıfırla
                 if (now - existing.WindowStart > rule.Window)
                     return (now, 1);
                 return (existing.WindowStart, existing.Count + 1);

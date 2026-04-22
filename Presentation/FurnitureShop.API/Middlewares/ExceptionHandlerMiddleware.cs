@@ -21,6 +21,9 @@ public class ExceptionHandlerMiddleware
             ["Surname"] = "Soyad",
             ["Email"] = "Email",
             ["Password"] = "Şifrə",
+            ["ConfirmPassword"] = "Şifrənin təkrarı",
+            ["ConfirmNewPassword"] = "Yeni şifrənin təkrarı",
+            ["CurrentPassword"] = "Cari şifrə",
             ["Price"] = "Qiymət",
             ["PriceExtra"] = "Əlavə qiymət",
             ["Stock"] = "Stok",
@@ -53,6 +56,9 @@ public class ExceptionHandlerMiddleware
             ["Surname"] = "Фамилия",
             ["Email"] = "Email",
             ["Password"] = "Пароль",
+            ["ConfirmPassword"] = "Подтверждение пароля",
+            ["ConfirmNewPassword"] = "Подтверждение нового пароля",
+            ["CurrentPassword"] = "Текущий пароль",
             ["Price"] = "Цена",
             ["PriceExtra"] = "Доп. цена",
             ["Stock"] = "Склад",
@@ -85,6 +91,9 @@ public class ExceptionHandlerMiddleware
             ["Surname"] = "Surname",
             ["Email"] = "Email",
             ["Password"] = "Password",
+            ["ConfirmPassword"] = "Confirm password",
+            ["ConfirmNewPassword"] = "Confirm new password",
+            ["CurrentPassword"] = "Current password",
             ["Price"] = "Price",
             ["PriceExtra"] = "Extra price",
             ["Stock"] = "Stock",
@@ -153,7 +162,7 @@ public class ExceptionHandlerMiddleware
                 var fvErrors = fvEx.Errors
                     .GroupBy(e => e.PropertyName)
                     .ToDictionary(
-                        g => LocalizeField(g.Key, lang),
+                        g => g.Key.Length > 0 ? char.ToLower(g.Key[0]) + g.Key.Substring(1) : g.Key,
                         g => g.Select(e => LocalizeMessage(e.ErrorMessage, lang)).ToList());
 
                 _logger.Warning("Validation xətası — {Path} — {Errors}",
@@ -234,7 +243,7 @@ public class ExceptionHandlerMiddleware
     private static Dictionary<string, List<string>> LocalizeErrors(
         Dictionary<string, List<string>> errors, string lang)
         => errors.ToDictionary(
-            kvp => LocalizeField(kvp.Key, lang),
+            kvp => kvp.Key.Length > 0 ? char.ToLower(kvp.Key[0]) + kvp.Key.Substring(1) : kvp.Key,
             kvp => kvp.Value.Select(m => LocalizeMessage(m, lang)).ToList());
 
     private static string LocalizeField(string field, string lang)

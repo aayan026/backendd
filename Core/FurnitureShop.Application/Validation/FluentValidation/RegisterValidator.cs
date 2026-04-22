@@ -25,5 +25,16 @@ public class RegisterValidator : AbstractValidator<RegisterDto>
             .MinimumLength(8).WithMessage("MinLength|Password|8")
             .Matches("[A-Z]").WithMessage("PasswordWeak|Password")
             .Matches("[0-9]").WithMessage("PasswordWeak|Password");
+
+        RuleFor(x => x.ConfirmPassword)
+            .NotEmpty().WithMessage("Required|ConfirmPassword")
+            .Equal(x => x.Password).WithMessage("PasswordConfirmMismatch");
+
+        When(x => !string.IsNullOrEmpty(x.Phone), () =>
+        {
+            RuleFor(x => x.Phone)
+                .Matches(@"^\+?[0-9]{7,15}$")
+                .WithMessage("PhoneInvalid|Phone");
+        });
     }
 }

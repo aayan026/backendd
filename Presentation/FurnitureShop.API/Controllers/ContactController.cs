@@ -1,35 +1,32 @@
 using FurnitureShop.Application.Dtos.Contact;
 using FurnitureShop.Application.Services.Abstracts;
+using FurnitureShop.Application.Validation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FurnitureShop.API.Controllers;
-
 
 [Route("api/contact")]
 public class ContactController : BaseApiController
 {
     private readonly IContactService _contact;
+    private readonly ILanguageService _lang;
 
-    public ContactController(IContactService contact)
+    public ContactController(IContactService contact, ILanguageService lang)
     {
         _contact = contact;
+        _lang = lang;
     }
 
-
+    /// <summary>
+    /// Contact formu göndər.
+    /// Bütün validasiya FluentValidation (ValidationFilter) tərəfindən həyata keçirilir —
+    /// 3 dildə (az/en/ru) xəta mesajları avtomatik qaytarılır.
+    /// </summary>
     [HttpPost("send")]
     public async Task<IActionResult> Send([FromBody] ContactMessageDto dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name))
-            return BadRequest(new { message = "Ad mütləqdir." });
-
-        if (string.IsNullOrWhiteSpace(dto.Email) || !dto.Email.Contains('@'))
-            return BadRequest(new { message = "Düzgün email daxil edin." });
-
-        if (string.IsNullOrWhiteSpace(dto.Message))
-            return BadRequest(new { message = "Mesaj mütləqdir." });
-
         await _contact.SendContactMessageAsync(dto);
-
-        return Ok(new { message = "Mesajınız göndərildi. Ən qısa zamanda sizinlə əlaqə saxlayacağıq." });
+        var lang = _lang.GetCurrentLanguage();
+        return Ok(new { message = ValidationMessages.Get(lang, "ContactSent") });
     }
 }
