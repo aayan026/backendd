@@ -10,5 +10,6 @@ public class ProductColorConfiguration : IEntityTypeConfiguration<ProductColor>
     {
         builder.Property(x => x.Name).HasMaxLength(50);
         builder.Property(x => x.HexCode).HasMaxLength(10);
+        builder.Property(x => x.ImageUrl).HasMaxLength(500).IsRequired(false);
     }
 }

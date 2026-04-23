@@ -2,6 +2,7 @@
 
 public class ProductColorDto
 {
-    public string Name { get; set; } 
-    public string HexCode { get; set; } 
+    public string Name { get; set; }
+    public string HexCode { get; set; }
+    public string? ImageUrl { get; set; }
 }

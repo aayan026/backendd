@@ -11,4 +11,5 @@ public class CreateProductColorDto
 {
     public string Name { get; set; } = null!;
     public string HexCode { get; set; } = null!;
+    public string? ImageUrl { get; set; }
 }
