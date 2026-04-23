@@ -22,6 +22,9 @@ public class ContactMessageValidator : AbstractValidator<ContactMessageDto>
                 .WithMessage("ContactPhoneInvalid");
         });
 
+        RuleFor(x => x.Subject)
+            .NotEmpty().WithMessage("ContactSubjectRequired");
+
         RuleFor(x => x.Message)
             .NotEmpty().WithMessage("ContactMessageRequired")
             .MaximumLength(2000).WithMessage("ContactMessageMaxLength");
