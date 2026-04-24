@@ -5,6 +5,7 @@ namespace FurnitureShop.Application.Repsitories.ReadRepositories;
 
 public interface IProductReadRepository : IGenericReadRepository<Product>
 {
+    IQueryable<Product> GetAllQuery(string lang);
     Task<IEnumerable<Product>> GetAllAsync(string lang);
     Task<IEnumerable<Product>> GetByCategoryAsync(int categoryId, string lang);
     Task<IEnumerable<Product>> GetFeaturedAsync(string lang);

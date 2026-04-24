@@ -54,8 +54,8 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> GetAllAsync(PaginationParams pagination)
     {
         _log.Information("Bütün məhsullar sorğusu — Səhifə: {Page} Ölçü: {PageSize}", pagination.Page, pagination.PageSize);
-        var products = await _readRepo.GetAllAsync(Lang);
-        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        var query = _readRepo.GetAllQuery(Lang);
+        var paged = await PagedList<Product>.CreateAsync(query, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
             Items = _mapper.Map<List<ProductDto>>(paged.Items),

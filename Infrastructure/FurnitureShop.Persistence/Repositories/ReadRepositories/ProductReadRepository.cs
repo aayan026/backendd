@@ -10,15 +10,17 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
 {
     public ProductReadRepository(AppDbContext context) : base(context) { }
 
-    public async Task<IEnumerable<Product>> GetAllAsync(string lang)
-        => await Table
+    public IQueryable<Product> GetAllQuery(string lang)
+        => Table
             .Where(x => !x.IsDeleted)
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .Include(x => x.Colors)
                 .ThenInclude(col => col.ColorImages)
-            .OrderBy(x => x.DisplayOrder)
-            .ToListAsync();
+            .OrderBy(x => x.DisplayOrder);
+
+    public async Task<IEnumerable<Product>> GetAllAsync(string lang)
+        => await GetAllQuery(lang).ToListAsync();
 
     public async Task<IEnumerable<Product>> GetByCategoryAsync(int categoryId, string lang)
         => await Table
@@ -41,7 +43,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
     public async Task<Product?> GetDetailAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id && !x.IsDeleted)
-            .Include(x => x.Translations)  // bütün dillər — admin redaktə üçün lazımdır
+            .Include(x => x.Translations)  
             .Include(x => x.Images)
             .Include(x => x.Colors)
                 .ThenInclude(col => col.ColorImages)

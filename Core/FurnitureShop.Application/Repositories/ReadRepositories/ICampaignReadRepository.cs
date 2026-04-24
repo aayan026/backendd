@@ -6,5 +6,6 @@ namespace FurnitureShop.Application.Repsitories.ReadRepositories;
 public interface ICampaignReadRepository : IGenericReadRepository<Campaign>
 {
     Task<IEnumerable<Campaign>> GetActiveAsync(string lang);
+    IQueryable<Campaign> GetAllQuery(string lang);
     Task<IEnumerable<Campaign>> GetAllWithTranslationsAsync(string lang);
 }

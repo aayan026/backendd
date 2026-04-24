@@ -1,4 +1,5 @@
 using AutoMapper;
+using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Dtos.Campaign;
 using FurnitureShop.Application.Exceptions;
 using FurnitureShop.Application.Repsitories.ReadRepositories;
@@ -14,31 +15,39 @@ namespace FurnitureShop.Persistence.Services.Concretes;
 
 public class CampaignService : ICampaignService
 {
-    private readonly ICampaignReadRepository  _readRepo;
+    private readonly ICampaignReadRepository _readRepo;
     private readonly ICampaignWriteRepository _writeRepo;
-    private readonly ILanguageService         _langService;
-    private readonly IMapper                  _mapper;
+    private readonly ILanguageService _langService;
+    private readonly IMapper _mapper;
     private static readonly ILogger _log = Log.ForContext<CampaignService>();
 
     private string lang => _langService.GetCurrentLanguage();
 
     public CampaignService(
-        ICampaignReadRepository  readRepo,
+        ICampaignReadRepository readRepo,
         ICampaignWriteRepository writeRepo,
-        ILanguageService         langService,
-        IMapper                  mapper)
+        ILanguageService langService,
+        IMapper mapper)
     {
-        _readRepo    = readRepo;
-        _writeRepo   = writeRepo;
+        _readRepo = readRepo;
+        _writeRepo = writeRepo;
         _langService = langService;
-        _mapper      = mapper;
+        _mapper = mapper;
     }
 
     public async Task<IEnumerable<CampaignDto>> GetActiveAsync()
         => _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetActiveAsync(lang));
 
-    public async Task<IEnumerable<CampaignDto>> GetAllAsync()
-        => _mapper.Map<IEnumerable<CampaignDto>>(await _readRepo.GetAllWithTranslationsAsync(lang));
+    public async Task<PagedList<CampaignDto>> GetAllAsync(PaginationParams pagination)
+    {
+        var query = _readRepo.GetAllQuery(lang);
+        var paged = await PagedList<Campaign>.CreateAsync(query, pagination.Page, pagination.PageSize);
+        return new PagedList<CampaignDto>
+        {
+            Items = _mapper.Map<List<CampaignDto>>(paged.Items),
+            Pagination = paged.Pagination
+        };
+    }
 
     public async Task<int> CreateAsync(CreateCampaignDto dto)
     {
@@ -66,7 +75,10 @@ public class CampaignService : ICampaignService
         campaign.IsActive = true;
         campaign.Translations = dto.Translations.Select(t => new CampaignTranslation
         {
-            Lang = t.Lang, Title = t.Title, Description = t.Description, ButtonText = t.ButtonText
+            Lang = t.Lang,
+            Title = t.Title,
+            Description = t.Description,
+            ButtonText = t.ButtonText
         }).ToList();
 
         await _writeRepo.AddAsync(campaign);
@@ -91,17 +103,17 @@ public class CampaignService : ICampaignService
                 new Dictionary<string, List<string>> { { "discountPercent", new List<string> { ValidationMessages.Get(lang, "DiscountCodeInvalidValue") } } });
 
         var newStart = dto.StartDate != default ? dto.StartDate : campaign.StartDate;
-        var newEnd   = dto.EndDate   != default ? dto.EndDate   : campaign.EndDate;
+        var newEnd = dto.EndDate != default ? dto.EndDate : campaign.EndDate;
         if (newStart != default && newEnd != default && newEnd <= newStart)
             throw new Application.Exceptions.ValidationException(
                 new Dictionary<string, List<string>> { { "endDate", new List<string> { ValidationMessages.Get(lang, "CampaignDateInvalid") } } });
 
-        campaign.ImageUrl        = dto.ImageUrl        ?? campaign.ImageUrl;
-        campaign.ButtonLink      = dto.ButtonLink      ?? campaign.ButtonLink;
+        campaign.ImageUrl = dto.ImageUrl ?? campaign.ImageUrl;
+        campaign.ButtonLink = dto.ButtonLink ?? campaign.ButtonLink;
         campaign.DiscountPercent = dto.DiscountPercent ?? campaign.DiscountPercent;
-        campaign.StartDate       = newStart;
-        campaign.EndDate         = newEnd;
-        campaign.DisplayOrder    = dto.DisplayOrder;
+        campaign.StartDate = newStart;
+        campaign.EndDate = newEnd;
+        campaign.DisplayOrder = dto.DisplayOrder;
 
         foreach (var t in dto.Translations)
         {
@@ -114,7 +126,10 @@ public class CampaignService : ICampaignService
             {
                 campaign.Translations.Add(new CampaignTranslation
                 {
-                    Lang = t.Lang, Title = t.Title, Description = t.Description, ButtonText = t.ButtonText
+                    Lang = t.Lang,
+                    Title = t.Title,
+                    Description = t.Description,
+                    ButtonText = t.ButtonText
                 });
             }
         }

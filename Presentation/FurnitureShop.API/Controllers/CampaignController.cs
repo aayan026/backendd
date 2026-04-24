@@ -1,3 +1,4 @@
+using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Dtos.Campaign;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
@@ -21,8 +22,11 @@ public class CampaignController : BaseApiController
 
     [Authorize(Roles = "Admin")]
     [HttpGet("all")]
-    public async Task<IActionResult> GetAll()
-        => OkResponse(await _service.GetAllAsync());
+    public async Task<IActionResult> GetAll([FromQuery] PaginationParams pagination)
+    {
+        var result = await _service.GetAllAsync(pagination);
+        return Ok(ApiResponse<List<CampaignDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
+    }
 
     [Authorize(Roles = "Admin")]
     [HttpPost]

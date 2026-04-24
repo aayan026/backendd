@@ -18,9 +18,12 @@ public class CampaignReadRepository : GenericReadRepository<Campaign>, ICampaign
             .ToListAsync();
 
     public async Task<IEnumerable<Campaign>> GetAllWithTranslationsAsync(string lang)
-        => await Table
+        => await GetAllQuery(lang).ToListAsync();
+
+    public IQueryable<Campaign> GetAllQuery(string lang)
+        => Table
             .Include(x => x.Translations.Where(t => t.Lang == lang))
-            .ToListAsync();
+            .OrderBy(x => x.DisplayOrder);
 
 
 }
