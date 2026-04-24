@@ -16,6 +16,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .OrderBy(x => x.DisplayOrder)
             .ToListAsync();
 
@@ -25,6 +26,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images)
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .OrderBy(x => x.DisplayOrder)
             .ToListAsync();
 
@@ -42,6 +44,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images)
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .Include(x => x.FurnitureCategory)
                 .ThenInclude(c => c.Translations.Where(t => t.Lang == lang))
             .FirstOrDefaultAsync();
@@ -67,6 +70,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations)
             .Include(x => x.Images)
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
     }
     public async Task<IEnumerable<Product>> GetByColorAsync(string colorName, string lang)
@@ -75,6 +79,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .ToListAsync();
 
     public Task<IEnumerable<Product>> GetInStockAsync(string lang)
@@ -84,6 +89,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
                 .Include(x => x.Translations.Where(t => t.Lang == lang))
                 .Include(x => x.Images.Where(i => i.IsPrimary))
                 .Include(x => x.Colors)
+                    .ThenInclude(col => col.ColorImages)
                 .OrderBy(x => x.DisplayOrder)
                 .AsEnumerable());
 
@@ -98,6 +104,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images)
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .Include(x => x.FurnitureCategory)
                 .ThenInclude(c => c.Translations.Where(t => t.Lang == lang))
             .FirstOrDefaultAsync();
@@ -115,6 +122,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
             .Include(x => x.Translations.Where(t => t.Lang == lang))
             .Include(x => x.Images.Where(i => i.IsPrimary))
             .Include(x => x.Colors)
+                .ThenInclude(col => col.ColorImages)
             .OrderBy(x => x.DisplayOrder);
 
         var results = await query.ToListAsync();

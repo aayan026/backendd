@@ -21,7 +21,10 @@ public class MappingProfile : Profile
     {
         // Product 
         CreateMap<ProductImage, ProductImageDto>();
-        CreateMap<ProductColor, ProductColorDto>();
+        CreateMap<ProductColor, ProductColorDto>()
+            .ForMember(d => d.Images, o => o.MapFrom(s => s.ColorImages));
+        CreateMap<ProductColorImage, ProductColorImageDto>();
+        CreateMap<CreateProductColorImageDto, ProductColorImage>();
 
         CreateMap<Product, ProductDto>()
             .ForMember(d => d.Name, o => o.MapFrom(s =>
@@ -49,7 +52,8 @@ public class MappingProfile : Profile
             .ForMember(d => d.Colors, o => o.Ignore())
             .ForMember(d => d.Translations, o => o.Ignore());
 
-        CreateMap<CreateProductColorDto, ProductColor>();
+        CreateMap<CreateProductColorDto, ProductColor>()
+            .ForMember(d => d.ColorImages, o => o.Ignore());
         CreateMap<ProductTranslationDto, ProductTranslation>();
 
         // FurnitureCategory 

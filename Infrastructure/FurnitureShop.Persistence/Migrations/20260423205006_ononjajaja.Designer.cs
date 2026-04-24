@@ -4,6 +4,7 @@ using FurnitureShop.Persistence.Datas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FurnitureShop.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260423205006_ononjajaja")]
+    partial class ononjajaja
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -680,7 +683,7 @@ namespace FurnitureShop.Persistence.Migrations
                     b.ToTable("ProductColors");
                 });
 
-            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductColorImage", b =>
+            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductImage", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -695,44 +698,6 @@ namespace FurnitureShop.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsPrimary")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("ProductColorId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SortOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductColorId");
-
-                    b.ToTable("ProductColorImages");
-                });
-
-            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("bit");
@@ -1455,17 +1420,6 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductColorImage", b =>
-                {
-                    b.HasOne("FurnitureShop.Domain.Entities.Concretes.ProductColor", "ProductColor")
-                        .WithMany("ColorImages")
-                        .HasForeignKey("ProductColorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ProductColor");
-                });
-
             modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductImage", b =>
                 {
                     b.HasOne("FurnitureShop.Domain.Entities.Concretes.Product", "Product")
@@ -1713,11 +1667,6 @@ namespace FurnitureShop.Persistence.Migrations
                     b.Navigation("Reviews");
 
                     b.Navigation("Translations");
-                });
-
-            modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.ProductColor", b =>
-                {
-                    b.Navigation("ColorImages");
                 });
 
             modelBuilder.Entity("FurnitureShop.Domain.Entities.Concretes.Wishlist", b =>

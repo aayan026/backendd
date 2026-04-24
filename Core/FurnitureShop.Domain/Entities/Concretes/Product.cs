@@ -8,6 +8,7 @@ namespace FurnitureShop.Domain.Entities.Concretes;
 public class Product : BaseEntity
 {
     public decimal Price { get; set; }
+    public decimal? DiscountPrice { get; set; }
     public int FurnitureCategoryId { get; set; }
 
     [JsonIgnore]

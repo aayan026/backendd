@@ -225,7 +225,16 @@ public class ProductService : IProductService
         var product = _mapper.Map<Product>(dto);
         product.Translations = dto.Translations.Select(t => _mapper.Map<ProductTranslation>(t)).ToList();
         product.Images = dto.ImageUrls.Select(i => new ProductImage { ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary }).ToList();
-        product.Colors = dto.Colors.Select(c => _mapper.Map<ProductColor>(c)).ToList();
+        product.Colors = dto.Colors.Select(c => {
+            var color = _mapper.Map<ProductColor>(c);
+            color.ColorImages = c.Images.Select((img, idx) => new ProductColorImage
+            {
+                ImageUrl = img.ImageUrl,
+                IsPrimary = img.IsPrimary || idx == 0,
+                SortOrder = img.SortOrder != 0 ? img.SortOrder : idx
+            }).ToList();
+            return color;
+        }).ToList();
 
         await _writeRepo.AddAsync(product);
         await _writeRepo.SaveChangesAsync();
@@ -286,8 +295,23 @@ public class ProductService : IProductService
             dto.ImageUrls.Select(i => new ProductImage { ProductId = dto.Id, ImageUrl = i.ImageUrl, IsPrimary = i.IsPrimary }));
 
         await _db.ProductColors.Where(c => c.ProductId == dto.Id).ExecuteDeleteAsync();
-        await _db.ProductColors.AddRangeAsync(
-            dto.Colors.Select(c => new ProductColor { ProductId = dto.Id, Name = c.Name, HexCode = c.HexCode, ImageUrl = c.ImageUrl }));
+        var newColors = dto.Colors.Select(c => {
+            var color = new ProductColor
+            {
+                ProductId = dto.Id,
+                Name = c.Name,
+                HexCode = c.HexCode,
+                ImageUrl = c.ImageUrl
+            };
+            color.ColorImages = c.Images.Select((img, idx) => new ProductColorImage
+            {
+                ImageUrl = img.ImageUrl,
+                IsPrimary = img.IsPrimary || idx == 0,
+                SortOrder = img.SortOrder != 0 ? img.SortOrder : idx
+            }).ToList();
+            return color;
+        }).ToList();
+        await _db.ProductColors.AddRangeAsync(newColors);
 
         _writeRepo.Update(product);
         await _writeRepo.SaveChangesAsync();

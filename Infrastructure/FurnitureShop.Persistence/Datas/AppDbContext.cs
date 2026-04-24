@@ -23,6 +23,7 @@ public class AppDbContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<ProductTranslation> ProductTranslations => Set<ProductTranslation>();
     public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<ProductColor> ProductColors => Set<ProductColor>();
+    public DbSet<ProductColorImage> ProductColorImages => Set<ProductColorImage>();
     public DbSet<Review> Reviews => Set<Review>();
 
     public DbSet<Order> Orders => Set<Order>();
