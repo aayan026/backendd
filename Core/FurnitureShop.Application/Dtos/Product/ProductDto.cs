@@ -2,8 +2,8 @@ namespace FurnitureShop.Application.Dtos.Product;
 public class ProductDto
 {
     public int Id { get; set; }
-    public string Name { get; set; } = null!;        
-    public string? Description { get; set; }          
+    public string Name { get; set; } = null!;
+    public string? Description { get; set; }
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }
     public decimal? PriceExtra { get; set; }
@@ -14,11 +14,12 @@ public class ProductDto
     public int Stock { get; set; }
     public int FurnitureCategoryId { get; set; }
     public string? CategoryName { get; set; }
-    public List<ProductImageDto>  Images    { get; set; } = new();
-    public List<ProductColorDto>  Colors    { get; set; } = new();
+    public List<ProductImageDto> Images { get; set; } = new();
+    public List<ProductColorDto> Colors { get; set; } = new();
+    public List<ProductTranslationDto> Translations { get; set; } = new();
 
-    public decimal? Width  { get; set; }
+    public decimal? Width { get; set; }
     public decimal? Height { get; set; }
-    public decimal? Depth  { get; set; }
+    public decimal? Depth { get; set; }
     public decimal? Weight { get; set; }
 }

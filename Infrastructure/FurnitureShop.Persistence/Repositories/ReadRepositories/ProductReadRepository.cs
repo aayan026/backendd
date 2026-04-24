@@ -41,7 +41,7 @@ public class ProductReadRepository : GenericReadRepository<Product>, IProductRea
     public async Task<Product?> GetDetailAsync(int id, string lang)
         => await Table
             .Where(x => x.Id == id && !x.IsDeleted)
-            .Include(x => x.Translations.Where(t => t.Lang == lang))
+            .Include(x => x.Translations)  // bütün dillər — admin redaktə üçün lazımdır
             .Include(x => x.Images)
             .Include(x => x.Colors)
                 .ThenInclude(col => col.ColorImages)

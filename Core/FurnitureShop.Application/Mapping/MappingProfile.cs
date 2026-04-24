@@ -40,7 +40,8 @@ public class MappingProfile : Profile
                     ? s.FurnitureCategory.Translations.First().Name
                     : null))
             .ForMember(d => d.Images, o => o.MapFrom(s => s.Images))
-            .ForMember(d => d.Colors, o => o.MapFrom(s => s.Colors));
+            .ForMember(d => d.Colors, o => o.MapFrom(s => s.Colors))
+            .ForMember(d => d.Translations, o => o.MapFrom(s => s.Translations));
 
         CreateMap<CreateProductDto, Product>()
             .ForMember(d => d.Images, o => o.Ignore())
@@ -55,6 +56,7 @@ public class MappingProfile : Profile
         CreateMap<CreateProductColorDto, ProductColor>()
             .ForMember(d => d.ColorImages, o => o.Ignore());
         CreateMap<ProductTranslationDto, ProductTranslation>();
+        CreateMap<ProductTranslation, ProductTranslationDto>();
 
         // FurnitureCategory 
         CreateMap<FurnitureCategory, FurnitureCategoryDto>()
