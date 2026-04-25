@@ -1,4 +1,3 @@
-# ── Logs ──
 logs/
 *.log
 npm-debug.log*
@@ -7,26 +6,20 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# ── Node ──
-node_modules/
 dist/
 dist-ssr/
 *.local
 
-# ── Gizli fayllar (SECRETS) ──
 .env
 .env.local
 .env.*.local
 
-# ── ASP.NET Core User Secrets ──
 **/Properties/secrets.json
 
-# ── Build çıxışları ──
 [Bb]in/
 [Oo]bj/
 *.user
 
-# ── IDE / Editor ──
 .vs/
 .vscode/*
 !.vscode/extensions.json
