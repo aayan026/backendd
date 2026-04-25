@@ -1,4 +1,7 @@
+using FurnitureShop.Domain.Entities.Concretes;
+
 namespace FurnitureShop.Application.Dtos.Campaign;
+
 public class CampaignDto
 {
     public int Id { get; set; }
@@ -12,4 +15,9 @@ public class CampaignDto
     public DateTime EndDate { get; set; }
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; }
+
+    public CampaignScopeType ScopeType { get; set; }
+    public List<int> ProductIds { get; set; } = new();
+    public List<int> CollectionIds { get; set; } = new();
+    public List<int> CategoryIds { get; set; } = new();
 }

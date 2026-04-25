@@ -13,6 +13,14 @@ public class CampaignConfiguration : IEntityTypeConfiguration<Campaign>
         builder.Property(x => x.ImageUrl).HasMaxLength(500);
         builder.Property(x => x.ButtonLink).HasMaxLength(300);
 
+        builder.Property(x => x.ScopeType)
+            .HasConversion<int>()
+            .HasDefaultValue(CampaignScopeType.All);
+
+        builder.Property(x => x.ProductIds).HasMaxLength(2000);
+        builder.Property(x => x.CollectionIds).HasMaxLength(500);
+        builder.Property(x => x.CategoryIds).HasMaxLength(200);
+
         builder.HasMany(x => x.Translations)
             .WithOne(t => t.Campaign)
             .HasForeignKey(t => t.CampaignId)

@@ -1,5 +1,6 @@
 using FurnitureShop.Application.Common.Responses;
 using FurnitureShop.Application.Dtos.Campaign;
+using FurnitureShop.Application.Dtos.Product;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,10 +17,20 @@ public class CampaignController : BaseApiController
         _service = service;
     }
 
+    /// <summary>Public: aktiv kampaniyalar (hero slider)</summary>
     [HttpGet]
     public async Task<IActionResult> GetActive()
         => OkResponse(await _service.GetActiveAsync());
 
+    /// <summary>Public: kampaniyanın scope-una görə məhsullar</summary>
+    [HttpGet("{id:int}/products")]
+    public async Task<IActionResult> GetProducts(int id, [FromQuery] PaginationParams pagination)
+    {
+        var result = await _service.GetCampaignProductsAsync(id, pagination);
+        return Ok(ApiResponse<List<ProductDto>>.Ok(result.Items, result.Pagination, Msg("Success")));
+    }
+
+    /// <summary>Admin: bütün kampaniyalar (paginated)</summary>
     [Authorize(Roles = "Admin")]
     [HttpGet("all")]
     public async Task<IActionResult> GetAll([FromQuery] PaginationParams pagination)

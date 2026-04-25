@@ -7,16 +7,24 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace FurnitureShop.Domain.Entities.Concretes;
+
+public enum CampaignScopeType { All = 0, Products = 1, Collections = 2, Categories = 3 }
+
 public class Campaign : BaseEntity
 {
-
     public string? ImageUrl { get; set; }
-
     public string? ButtonLink { get; set; }
     public decimal? DiscountPercent { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public bool IsActive { get; set; }
     public int DisplayOrder { get; set; }
-    public ICollection<CampaignTranslation> Translations { get; set; }
+    public CampaignScopeType ScopeType { get; set; } = CampaignScopeType.All;
+    public string? ProductIds { get; set; }
+
+    public string? CollectionIds { get; set; }
+
+    public string? CategoryIds { get; set; }
+
+    public ICollection<CampaignTranslation> Translations { get; set; } = new List<CampaignTranslation>();
 }
