@@ -99,6 +99,12 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
     public Task<int> GetTotalCountAsync()
         => Table.CountAsync();
 
+    public Task<int> GetTodayCountAsync()
+    {
+        var todayUtc = DateTime.UtcNow.Date;
+        return Table.CountAsync(x => x.CreatedAt >= todayUtc && x.CreatedAt < todayUtc.AddDays(1));
+    }
+
     public async Task<decimal> GetTotalRevenueAsync()
     {
         var sum = await Table
@@ -113,31 +119,44 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
     public async Task<IEnumerable<(int ProductId, string ProductName, string? ImageUrl, string? Category, decimal Price, int Stock, int SoldCount)>>
         GetTopProductsAsync(int limit = 5)
     {
-        var result = await Table
+        var topData = await Table
             .Where(x => x.Status != OrderStatus.Cancelled)
             .SelectMany(o => o.Items)
-            .Where(i => i.Product != null)
+            .Where(i => i.ProductId != null)
             .GroupBy(i => i.ProductId)
-            .Select(g => new
-            {
-                ProductId = g.Key,
-                SoldCount = g.Sum(i => i.Quantity),
-                Product   = g.First().Product
-            })
+            .Select(g => new { ProductId = g.Key, SoldCount = g.Sum(i => i.Quantity) })
             .OrderByDescending(x => x.SoldCount)
             .Take(limit)
             .ToListAsync();
 
-        return result.Select(x => (
-            x.ProductId ?? 0,
-            x.Product!.Translations.FirstOrDefault()?.Name ?? $"Product #{x.ProductId}",
-            x.Product.Images.FirstOrDefault(i => i.IsPrimary)?.ImageUrl
-                ?? x.Product.Images.FirstOrDefault()?.ImageUrl,
-            x.Product.FurnitureCategory?.Translations.FirstOrDefault()?.Name,
-            x.Product.Price,
-            x.Product.Stock,
-            x.SoldCount
-        ));
+        if (!topData.Any())
+            return Enumerable.Empty<(int, string, string?, string?, decimal, int, int)>();
+
+        var productIds = topData.Select(x => x.ProductId).ToList();
+        var products = await _context.Products
+            .Where(p => productIds.Contains(p.Id))
+            .Include(p => p.Translations)
+            .Include(p => p.Images.Where(i => i.IsPrimary))
+            .Include(p => p.FurnitureCategory)
+                .ThenInclude(c => c!.Translations)
+            .ToListAsync();
+
+        return topData.Select(x =>
+        {
+            var product = products.FirstOrDefault(p => p.Id == x.ProductId);
+            var name = product?.Translations.FirstOrDefault()?.Name ?? $"Məhsul #{x.ProductId}";
+            var imageUrl = product?.Images.FirstOrDefault()?.ImageUrl;
+            var category = product?.FurnitureCategory?.Translations.FirstOrDefault()?.Name;
+            return (
+                x.ProductId ?? 0,
+                name,
+                imageUrl,
+                category,
+                product?.Price ?? 0m,
+                product?.Stock ?? 0,
+                x.SoldCount
+            );
+        });
     }
 
     public async Task<IEnumerable<(int Year, int Month, decimal Revenue, int OrderCount)>>
@@ -150,7 +169,7 @@ public class OrderReadRepository : GenericReadRepository<Order>, IOrderReadRepos
             {
                 g.Key.Year,
                 g.Key.Month,
-                Revenue    = g.Sum(x => x.TotalPrice),
+                Revenue = g.Sum(x => x.TotalPrice),
                 OrderCount = g.Count()
             })
             .OrderBy(x => x.Month)

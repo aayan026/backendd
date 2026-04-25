@@ -1,4 +1,5 @@
 using FurnitureShop.Application.Common.Responses;
+using FurnitureShop.Application.Repsitories.ReadRepositories;
 using FurnitureShop.Application.Services.Abstracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,28 +11,30 @@ namespace FurnitureShop.API.Controllers;
 public class AdminController : BaseApiController
 {
     private readonly IAdminService _adminService;
+    private readonly IOrderReadRepository _orderReadRepo;
     private static readonly string[] _allowedRoles = { "Admin", "Customer" };
 
-    public AdminController(IAdminService adminService)
+    public AdminController(IAdminService adminService, IOrderReadRepository orderReadRepo)
     {
         _adminService = adminService;
+        _orderReadRepo = orderReadRepo;
     }
 
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard()
         => OkResponse(await _adminService.GetDashboardAsync());
 
-
     [HttpGet("dashboard/stats")]
     public async Task<IActionResult> DashboardStats()
     {
         var data = await _adminService.GetDashboardAsync();
         var totalProducts = await _adminService.GetTotalProductCountAsync();
+        var todayOrders = await _orderReadRepo.GetTodayCountAsync(); // DÜZƏLİŞ: real bugünkü say
 
         return OkResponse(new
         {
             totalOrders = data.Orders.Total,
-            todayOrders = data.Orders.Pending,
+            todayOrders = todayOrders,
             totalRevenue = data.Revenue,
             totalCustomers = data.UserCount,
             totalProducts = totalProducts,
