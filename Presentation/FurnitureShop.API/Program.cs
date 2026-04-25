@@ -1,3 +1,4 @@
+using DotNetEnv;
 using FluentValidation;
 using FurnitureShop.API.Extensions;
 using FurnitureShop.API.Filters;
@@ -9,6 +10,11 @@ using FurnitureShop.Application.Validation.Concrete;
 using FurnitureShop.Infrastructure;
 using FurnitureShop.Persistence;
 using Serilog;
+
+// .env faylını yüklə (mövcuddursa — production-da sistem env dəyişənləri istifadə olunur)
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (File.Exists(envPath))
+    Env.Load(envPath);
 
 SerilogExtensions.ConfigureBootstrapLogger();
 
@@ -22,7 +28,7 @@ try
 
     if (string.IsNullOrWhiteSpace(builder.Configuration["JWT:Secret"]))
         throw new InvalidOperationException(
-            "JWT:Secret konfiqurasiya edilməyib. appsettings.Development.json-a əlavə edin.");
+            "JWT:Secret konfiqurasiya edilməyib. .env faylına JWT__Secret əlavə edin.");
 
     builder.Services.AddApplicationRegister();
     builder.Services.AddPersistenceRegister(builder.Configuration);
