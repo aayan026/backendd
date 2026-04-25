@@ -131,8 +131,9 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetPagedAsync(int categoryId, PaginationParams pagination)
     {
-        var products = await _readRepo.GetByCategoryAsync(categoryId, Lang);
-        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        // DÜZƏLİŞ: IQueryable ilə DB-də paginate olur (əvvəl bütün kateqoriya məhsulları RAM-a gəlirdi)
+        var query = _readRepo.GetByCategoryQuery(categoryId, Lang);
+        var paged = await PagedList<Product>.CreateAsync(query, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
             Items = _mapper.Map<List<ProductDto>>(paged.Items),
@@ -143,8 +144,9 @@ public class ProductService : IProductService
     public async Task<PagedList<ProductDto>> SearchAsync(string keyword, PaginationParams pagination)
     {
         _log.Information("Məhsul axtarışı — Açar söz: {Keyword}", keyword);
-        var products = await _readRepo.SearchAsync(keyword, Lang);
-        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        // DÜZƏLİŞ: əvvəl bütün nəticələr RAM-a gəlirdi, indi DB-də paginate olur
+        var query = _readRepo.SearchQuery(keyword, Lang);
+        var paged = await PagedList<Product>.CreateAsync(query, pagination.Page, pagination.PageSize);
         _log.Information("Axtarış nəticəsi — Açar söz: {Keyword} Tapılan: {Count}", keyword, paged.Pagination.TotalCount);
         return new PagedList<ProductDto>
         {
@@ -164,8 +166,9 @@ public class ProductService : IProductService
                 new Dictionary<string, List<string>> { { "price", new List<string> { "Minimum qiymət maksimumdan böyük ola bilməz" } } });
 
         _log.Information("Qiymət aralığına görə məhsullar — Min: {Min} Max: {Max}", min, max);
-        var products = await _readRepo.GetByPriceRangeAsync(min, max, Lang);
-        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        // DÜZƏLİŞ: IQueryable ilə DB-də paginate olur
+        var query = _readRepo.GetByPriceRangeQuery(min, max, Lang);
+        var paged = await PagedList<Product>.CreateAsync(query, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
             Items = _mapper.Map<List<ProductDto>>(paged.Items),
@@ -175,8 +178,9 @@ public class ProductService : IProductService
 
     public async Task<PagedList<ProductDto>> GetByColorAsync(string colorName, PaginationParams pagination)
     {
-        var products = await _readRepo.GetByColorAsync(colorName, Lang);
-        var paged = PagedList<Product>.Create(products, pagination.Page, pagination.PageSize);
+        // DÜZƏLİŞ: IQueryable ilə DB-də paginate olur
+        var query = _readRepo.GetByColorQuery(colorName, Lang);
+        var paged = await PagedList<Product>.CreateAsync(query, pagination.Page, pagination.PageSize);
         return new PagedList<ProductDto>
         {
             Items = _mapper.Map<List<ProductDto>>(paged.Items),
