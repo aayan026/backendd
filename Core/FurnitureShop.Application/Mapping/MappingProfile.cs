@@ -187,6 +187,8 @@ public class MappingProfile : Profile
                     : null))
             .ForMember(d => d.CollectionPrice, o => o.MapFrom(s =>
                 s.Collection != null ? s.Collection.TotalPrice : (decimal?)null))
+            .ForMember(d => d.CollectionImage, o => o.MapFrom(s =>
+    s.Collection != null ? s.Collection.ImagesUrl : null))
             .ForMember(d => d.TotalPrice, o => o.MapFrom(s =>
                 s.Product != null
                     ? s.Product.Price * s.Quantity
@@ -231,7 +233,12 @@ public class MappingProfile : Profile
                 s.Translations.FirstOrDefault() != null
                     ? s.Translations.First().ButtonText
                     : null))
-            .ForMember(d => d.IsActive, o => o.MapFrom(s => s.IsActive));
+            .ForMember(d => d.IsActive, o => o.MapFrom(s => s.IsActive))
+            // ProductIds/CollectionIds/CategoryIds DB-de JSON string saxlanir.
+            // MapWithScope() bunlari ParseIds() ile manual set edir, AutoMapper ignore etmelidir.
+            .ForMember(d => d.ProductIds, o => o.Ignore())
+            .ForMember(d => d.CollectionIds, o => o.Ignore())
+            .ForMember(d => d.CategoryIds, o => o.Ignore());
 
         CreateMap<CreateCampaignDto, Campaign>()
             .ForMember(d => d.Translations, o => o.Ignore());

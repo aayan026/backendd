@@ -9,6 +9,7 @@ public class CartItemDto
     public decimal? ProductPrice { get; set; }
     public int? CollectionId { get; set; }
     public string? CollectionName { get; set; }
+    public string? CollectionImage { get; set; }
     public decimal? CollectionPrice { get; set; }
     public string? SelectedColor { get; set; }
     public string? SelectedSize { get; set; }
